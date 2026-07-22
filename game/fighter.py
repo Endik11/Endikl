@@ -228,6 +228,9 @@ class Fighter:
         self.combo_timer = 0.0
         self.last_attack_name = ""
         self.input_buffer = InputBuffer()
+        self.stance = "neutral"
+        self.throw_timer = 0.0
+        self.tag_timer = 0.0
         self.combo_system = ComboSystem()
         self.animator = Animator()
         self.flash_timer = 0.0
@@ -260,6 +263,9 @@ class Fighter:
         self.combo_hits = 0
         self.combo_timer = 0.0
         self.input_buffer.clear()
+        self.stance = "neutral"
+        self.throw_timer = 0.0
+        self.tag_timer = 0.0
 
     def update_facing(self, opponent_x: float) -> None:
         if self.current_attack is None and self.hit_stun <= 0 and self.block_stun <= 0:
@@ -281,6 +287,8 @@ class Fighter:
         self.input_buffer.prune(now)
         self.flash_timer = max(0.0, self.flash_timer - dt)
         self.combo_timer = max(0.0, self.combo_timer - dt)
+        self.throw_timer = max(0.0, self.throw_timer - dt)
+        self.tag_timer = max(0.0, self.tag_timer - dt)
         if self.combo_timer <= 0:
             self.combo_hits = 0
 
@@ -314,6 +322,9 @@ class Fighter:
             "light_kick",
             "heavy_kick",
             "block",
+            "throw",
+            "stance",
+            "tag",
             "energy",
         ):
             if pressed.get(command):
@@ -341,6 +352,15 @@ class Fighter:
             and controls.get("block", False)
             and not controls.get("up", False)
         )
+
+        if pressed.get("stance"):
+            self.stance = "back" if self.stance == "neutral" else "neutral"
+
+        if pressed.get("tag") and self.tag_timer <= 0:
+            self.tag_timer = 0.25
+
+        if pressed.get("throw") and self.throw_timer <= 0 and self.on_ground:
+            self.throw_timer = 0.25
 
         if self.crouching or self.blocking:
             self.vel.x *= FRICTION
@@ -372,6 +392,11 @@ class Fighter:
         )
         if attack_button is None:
             return
+
+        if self.combo_hits >= 1 and attack_button in ("light_punch", "heavy_punch"):
+            attack_button = "heavy_punch"
+        elif self.combo_hits >= 1 and attack_button in ("light_kick", "heavy_kick"):
+            attack_button = "heavy_kick"
 
         special = self.combo_system.match(self.input_buffer, now, self.energy)
         if special is not None:

@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .debug import log_error
 from .settings import SAVE_DIR
 
 
@@ -31,6 +32,9 @@ class ProfileData:
     )
     arcade_clears: int = 0
     story_chapter: int = 1
+    currency: int = 0
+    purchased_items: list[str] = field(default_factory=list)
+    equipped_items: dict[str, str] = field(default_factory=dict)
     record: MatchRecord = field(default_factory=MatchRecord)
 
 
@@ -57,19 +61,26 @@ class SaveManager:
                 ),
                 arcade_clears=int(data.get("arcade_clears", 0)),
                 story_chapter=int(data.get("story_chapter", 1)),
+                currency=int(data.get("currency", 0)),
+                purchased_items=list(data.get("purchased_items", [])),
+                equipped_items=dict(data.get("equipped_items", {})),
                 record=record,
             )
-        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+            log_error("Failed to load profile data", exc)
             self.profile = ProfileData()
             self.save()
         return self.profile
 
     def save(self) -> None:
         SAVE_DIR.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
-            json.dumps(asdict(self.profile), indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        try:
+            self.path.write_text(
+                json.dumps(asdict(self.profile), indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            log_error("Failed to save profile data", exc)
 
     def record_win(self, finisher: str | None, perfect: bool) -> None:
         self.profile.record.wins += 1
@@ -96,4 +107,21 @@ class SaveManager:
         if key not in target:
             target.append(key)
             self.save()
+
+    def award_currency(self, amount: int) -> None:
+        self.profile.currency += amount
+        self.save()
+
+    def purchase_item(self, item_id: str, category: str, cost: int) -> None:
+        if self.profile.currency < cost:
+            return
+        self.profile.currency -= cost
+        if item_id not in self.profile.purchased_items:
+            self.profile.purchased_items.append(item_id)
+        self.profile.equipped_items[category] = item_id
+        self.save()
+
+    def equip_item(self, category: str, item_id: str) -> None:
+        self.profile.equipped_items[category] = item_id
+        self.save()
 

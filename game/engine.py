@@ -12,9 +12,11 @@ from .camera import Camera
 from .collision import resolve_body_overlap
 from .fatality import FinisherState, detect_finisher, draw_finisher_overlay
 from .fighter import FIGHTER_DEFINITIONS, Fighter
-from .menu import ARENAS, ArenaSelectScreen, CharacterSelectScreen, MenuScreen, SettingsScreen, draw_text
+from .menu import ARENAS, ArenaSelectScreen, CharacterSelectScreen, CollectionScreen, MenuScreen, SettingsScreen, StatsScreen, draw_text
 from .particles import ParticleSystem
+from .debug import log_error
 from .save import SaveManager
+from .shop import ShopScreen
 from .settings import (
     COLORS,
     FPS,
@@ -92,9 +94,11 @@ class InputRouter:
             joystick.init()
             self.joysticks.append(joystick)
 
-    def poll(self) -> tuple[dict[str, dict[str, bool]], dict[str, dict[str, bool]], bool]:
+    def poll(self) -> tuple[dict[str, dict[str, bool]], dict[str, dict[str, bool]], bool, list[pygame.event.Event]]:
         quit_requested = False
+        events: list[pygame.event.Event] = []
         for event in pygame.event.get():
+            events.append(event)
             if event.type == pygame.QUIT:
                 quit_requested = True
             elif event.type in (pygame.JOYDEVICEADDED, pygame.JOYDEVICEREMOVED):
@@ -123,7 +127,7 @@ class InputRouter:
             player: {command: controls[player][command] for command in COMMANDS}
             for player in ("p1", "p2")
         }
-        return controls, pressed, quit_requested
+        return controls, pressed, quit_requested, events
 
     def _keyboard_controls(self, keys, player: str) -> dict[str, bool]:
         mapping = self.settings.controls.keyboard[player]
@@ -195,6 +199,8 @@ class GameEngine:
         self.settings_screen = SettingsScreen(self.settings)
         self.character_screen: CharacterSelectScreen | None = None
         self.arena_screen: ArenaSelectScreen | None = None
+        self.collection_screen = CollectionScreen(self.profile)
+        self.stats_screen = StatsScreen(self.profile)
         self.context = MatchContext()
         self.fighters: list[Fighter] = []
         self.ai: FighterAI | None = None
@@ -207,7 +213,12 @@ class GameEngine:
         self.pending_finisher: str | None = None
         self.debug_boxes = False
         self.pause_selected = 0
-        self.pause_items = [("Продолжить", "resume"), ("Настройки", "settings"), ("Главное меню", "menu")]
+        self.pause_items = [("Продолжить", "resume"), ("Настройки", "settings"), ("Рестарт", "restart"), ("Главное меню", "menu"), ("Выйти", "quit_game")]
+        self.shop_screen = ShopScreen()
+        self.pause_confirm = False
+        self.pending_quit = False
+        self.pause_button_rects: list[pygame.Rect] = []
+        self.pause_hover_index: int | None = None
 
     def _create_display(self) -> pygame.Surface:
         flags = pygame.RESIZABLE
@@ -233,11 +244,11 @@ class GameEngine:
             dt = self.clock.tick(FPS) / 1000.0
             dt = min(dt, 1 / 30)
             self.time += dt
-            controls, pressed, quit_requested = self.input.poll()
+            controls, pressed, quit_requested, events = self.input.poll()
             if quit_requested:
                 self.running = False
 
-            self._update(dt, controls, pressed)
+            self._update(dt, controls, pressed, events)
             self._draw()
             self._present()
 
@@ -250,35 +261,50 @@ class GameEngine:
         dt: float,
         controls: dict[str, dict[str, bool]],
         pressed: dict[str, dict[str, bool]],
+        events: list[pygame.event.Event],
     ) -> None:
         if pressed["p1"].get("heavy_punch") and pressed["p1"].get("heavy_kick") and pressed["p1"].get("block"):
             self.debug_boxes = not self.debug_boxes
 
         if self.state == "menu":
-            action = self.menu_screen.update(pressed["p1"])
+            action = self.menu_screen.update(pressed["p1"], events)
             self._handle_menu_action(action)
         elif self.state == "settings":
-            action = self.settings_screen.update(pressed["p1"])
+            action = self.settings_screen.update(pressed["p1"], events)
             if action == "back":
+                self.settings_manager.settings = self.settings_screen.settings
                 self.settings_manager.save()
+                self.settings = self.settings_manager.settings
                 self.screen = self._create_display()
+                self.audio = ToneBank(self.settings.audio.sfx_volume)
                 self.state = "pause" if self.round_phase == "paused_settings" else "menu"
                 if self.round_phase == "paused_settings":
                     self.round_phase = "fight"
+        elif self.state == "shop":
+            action = self.shop_screen.update(pressed["p1"], self.profile, self.save_manager, events)
+            if action == "back":
+                self.state = "menu"
+        elif self.state == "collection":
+            action = self.collection_screen.update(pressed["p1"], events)
+            if action == "back":
+                self.state = "menu"
+        elif self.state == "stats":
+            action = self.stats_screen.update(pressed["p1"], events)
+            if action == "back":
+                self.state = "menu"
         elif self.state == "character_select" and self.character_screen:
-            action = self.character_screen.update(pressed["p1"], pressed["p2"])
+            action = self.character_screen.update(pressed["p1"], pressed["p2"], events)
             if action == "arena":
                 self.context.p1_key = self.character_screen.p1_key
                 self.context.p2_key = self.character_screen.p2_key
                 self.profile.selected_fighter = self.context.p1_key
                 self.save_manager.save()
-                self.arena_screen = ArenaSelectScreen(self.profile.selected_arena)
-                self.state = "arena_select"
+                self._start_match()
                 self.audio.play("select")
             elif action == "back":
                 self.state = "menu"
         elif self.state == "arena_select" and self.arena_screen:
-            action = self.arena_screen.update(pressed["p1"])
+            action = self.arena_screen.update(pressed["p1"], events)
             if action == "fight":
                 self.context.arena_key = self.arena_screen.arena_key
                 self.profile.selected_arena = self.context.arena_key
@@ -286,11 +312,11 @@ class GameEngine:
                 self._start_match()
                 self.audio.play("select")
             elif action == "back":
-                self.state = "character_select"
+                self.state = "menu"
         elif self.state == "fight":
             self._update_fight(dt, controls, pressed)
         elif self.state == "pause":
-            self._update_pause(pressed["p1"])
+            self._update_pause(pressed, events)
         elif self.state == "match_over":
             if self.phase_timer > 0:
                 self.phase_timer -= dt
@@ -310,6 +336,15 @@ class GameEngine:
             self.running = False
         elif action == "settings":
             self.state = "settings"
+        elif action == "shop":
+            self.state = "shop"
+        elif action == "collection":
+            self.state = "collection"
+        elif action == "stats":
+            self.state = "stats"
+        elif action == "arena":
+            self.arena_screen = ArenaSelectScreen(self.profile.selected_arena)
+            self.state = "arena_select"
         elif action in ("story", "arcade", "tournament", "vs", "training"):
             self.context = MatchContext(mode=action)
             if action in ("story", "arcade", "tournament"):
@@ -550,11 +585,14 @@ class GameEngine:
         perfect = player_won and self.fighters[0].health == self.fighters[0].max_health
         if player_won:
             self.save_manager.record_win(finisher, perfect)
+            self.save_manager.award_currency(150 if self.context.mode == "vs" else 250)
             if self.context.mode == "arcade" and not self._has_next_ladder_match():
                 self.profile.arcade_clears += 1
                 self.save_manager.unlock("glass_court", "arena")
+                self.save_manager.award_currency(500)
             if self.context.mode == "story":
                 self.profile.story_chapter = max(self.profile.story_chapter, self.context.ladder_index + 2)
+                self.save_manager.award_currency(300)
         else:
             self.save_manager.record_loss()
 
@@ -588,29 +626,86 @@ class GameEngine:
         self.fighters[0].reset_round(350, 1)
         self.fighters[1].reset_round(930, -1)
 
-    def _update_pause(self, pressed: dict[str, bool]) -> None:
-        if pressed.get("down"):
+    def _update_pause(self, pressed: dict[str, dict[str, bool]], events: list[pygame.event.Event]) -> None:
+        p1 = pressed.get("p1", {})
+        p2 = pressed.get("p2", {})
+
+        if self.pending_quit:
+            if p1.get("light_punch") or p1.get("heavy_punch") or p1.get("energy") or p2.get("light_punch") or p2.get("heavy_punch") or p2.get("energy"):
+                self.running = False
+            elif p1.get("block") or p2.get("block"):
+                self.pending_quit = False
+            return
+
+        self.pause_button_rects = []
+        mouse_pos = self._screen_to_virtual(pygame.mouse.get_pos())
+        for index, (label, _) in enumerate(self.pause_items):
+            y = 298 + index * 46
+            rect = pygame.Rect(490, y - 12, 300, 30)
+            self.pause_button_rects.append(rect)
+            if rect.collidepoint(mouse_pos):
+                self.pause_selected = index
+                self.pause_hover_index = index
+                break
+        else:
+            self.pause_hover_index = None
+
+        if p1.get("down") or p2.get("down"):
             self.pause_selected = (self.pause_selected + 1) % len(self.pause_items)
-        if pressed.get("up"):
+        if p1.get("up") or p2.get("up"):
             self.pause_selected = (self.pause_selected - 1) % len(self.pause_items)
-        if pressed.get("pause") or pressed.get("block"):
+        if p1.get("pause") or p2.get("pause"):
             self.state = "fight"
             return
-        if accept_pressed_any(pressed):
-            action = self.pause_items[self.pause_selected][1]
-            if action == "resume":
-                self.state = "fight"
-            elif action == "settings":
-                self.round_phase = "paused_settings"
-                self.state = "settings"
-            elif action == "menu":
-                self.state = "menu"
+        if p1.get("block") or p2.get("block"):
+            self.state = "fight"
+            return
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                for index, rect in enumerate(self.pause_button_rects):
+                    if rect.collidepoint(mouse_pos):
+                        self._activate_pause_action(self.pause_items[index][1])
+                        return
+        if p1.get("light_punch") or p1.get("heavy_punch") or p1.get("energy") or p2.get("light_punch") or p2.get("heavy_punch") or p2.get("energy"):
+            self._activate_pause_action(self.pause_items[self.pause_selected][1])
+
+    def _activate_pause_action(self, action: str) -> None:
+        if action == "resume":
+            self.state = "fight"
+        elif action == "settings":
+            self.round_phase = "paused_settings"
+            self.state = "settings"
+        elif action == "restart":
+            self._start_match(reset_ladder=False)
+            self.state = "fight"
+        elif action == "menu":
+            self.fighters = []
+            self.state = "menu"
+        elif action == "quit_game":
+            self.pending_quit = True
+
+    def _screen_to_virtual(self, pos: tuple[int, int]) -> tuple[int, int]:
+        screen_w, screen_h = self.screen.get_size()
+        if screen_w <= 0 or screen_h <= 0:
+            return pos
+        if (screen_w, screen_h) == (VIRTUAL_WIDTH, VIRTUAL_HEIGHT):
+            return pos
+        return (
+            int(pos[0] * VIRTUAL_WIDTH / screen_w),
+            int(pos[1] * VIRTUAL_HEIGHT / screen_h),
+        )
 
     def _draw(self) -> None:
         if self.state == "menu":
             self.menu_screen.draw(self.canvas, self.fonts, self.time)
         elif self.state == "settings":
             self.settings_screen.draw(self.canvas, self.fonts, self.time)
+        elif self.state == "shop":
+            self.shop_screen.draw(self.canvas, self.fonts, self.time, self.profile)
+        elif self.state == "collection":
+            self.collection_screen.draw(self.canvas, self.fonts, self.time)
+        elif self.state == "stats":
+            self.stats_screen.draw(self.canvas, self.fonts, self.time)
         elif self.state == "character_select" and self.character_screen:
             self.character_screen.draw(self.canvas, self.fonts, self.time)
         elif self.state == "arena_select" and self.arena_screen:
@@ -790,9 +885,17 @@ class GameEngine:
         pygame.draw.rect(self.canvas, COLORS["panel"], panel, border_radius=8)
         pygame.draw.rect(self.canvas, COLORS["gold"], panel, 2, border_radius=8)
         draw_text(self.canvas, self.fonts["menu"], "Пауза", (640, 226), COLORS["gold"], center=True)
+        if self.pending_quit:
+            draw_text(self.canvas, self.fonts["body"], "Подтвердить выход?", (640, 286), COLORS["red"], center=True)
+            draw_text(self.canvas, self.fonts["small"], "Атака — да, блок — нет", (640, 324), COLORS["white"], center=True)
+            return
         for index, (label, _) in enumerate(self.pause_items):
-            y = 298 + index * 56
-            color = COLORS["gold"] if index == self.pause_selected else COLORS["white"]
+            y = 298 + index * 46
+            selected = index == self.pause_selected
+            color = COLORS["gold"] if selected else COLORS["white"]
+            if selected:
+                pygame.draw.rect(self.canvas, (42, 48, 57), pygame.Rect(486, y - 18, 308, 36), border_radius=6)
+                pygame.draw.line(self.canvas, COLORS["red"], (490, y + 12), (790, y + 12), 2)
             draw_text(self.canvas, self.fonts["body"], label, (640, y), color, center=True)
 
     def _draw_match_over(self) -> None:

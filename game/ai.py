@@ -36,6 +36,9 @@ COMMANDS = (
     "light_kick",
     "heavy_kick",
     "block",
+    "throw",
+    "stance",
+    "tag",
     "energy",
     "pause",
 )

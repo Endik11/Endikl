@@ -17,6 +17,8 @@ GAME_TITLE = "Mortal End: Наследие"
 VIRTUAL_WIDTH = 1280
 VIRTUAL_HEIGHT = 720
 FPS = 60
+RESOLUTIONS = ["1280x720", "1366x768", "1600x900", "1920x1080", "2560x1440"]
+FPS_OPTIONS = [30, 60, 90, 120, 144, 165, 240, 0]
 
 GROUND_Y = 584
 LEFT_WALL = 70
@@ -55,29 +57,35 @@ COLORS = {
 
 DEFAULT_KEYBOARD = {
     "p1": {
+        "left": pygame.K_a,
+        "right": pygame.K_d,
+        "up": pygame.K_w,
+        "down": pygame.K_s,
+        "light_punch": pygame.K_t,
+        "heavy_punch": pygame.K_u,
+        "light_kick": pygame.K_g,
+        "heavy_kick": pygame.K_j,
+        "block": pygame.K_SPACE,
+        "throw": pygame.K_LCTRL,
+        "stance": pygame.K_LALT,
+        "tag": pygame.K_TAB,
+        "energy": pygame.K_q,
+        "pause": pygame.K_1,
+    },
+    "p2": {
         "left": pygame.K_LEFT,
         "right": pygame.K_RIGHT,
         "up": pygame.K_UP,
         "down": pygame.K_DOWN,
-        "light_punch": pygame.K_a,
-        "heavy_punch": pygame.K_s,
-        "light_kick": pygame.K_z,
-        "heavy_kick": pygame.K_x,
-        "block": pygame.K_d,
-        "energy": pygame.K_q,
-        "pause": pygame.K_RETURN,
-    },
-    "p2": {
-        "left": pygame.K_j,
-        "right": pygame.K_l,
-        "up": pygame.K_i,
-        "down": pygame.K_k,
-        "light_punch": pygame.K_u,
-        "heavy_punch": pygame.K_o,
-        "light_kick": pygame.K_m,
-        "heavy_kick": pygame.K_PERIOD,
-        "block": pygame.K_p,
-        "energy": pygame.K_RSHIFT,
+        "light_punch": pygame.K_KP_1,
+        "heavy_punch": pygame.K_KP_2,
+        "light_kick": pygame.K_KP_3,
+        "heavy_kick": pygame.K_KP_4,
+        "block": pygame.K_RSHIFT,
+        "throw": pygame.K_RCTRL,
+        "stance": pygame.K_RALT,
+        "tag": pygame.K_SLASH,
+        "energy": pygame.K_KP_5,
         "pause": pygame.K_ESCAPE,
     },
 }
@@ -93,6 +101,9 @@ COMMANDS = (
     "light_kick",
     "heavy_kick",
     "block",
+    "throw",
+    "stance",
+    "tag",
     "energy",
     "pause",
 )
@@ -103,8 +114,11 @@ class VideoSettings:
     width: int = VIRTUAL_WIDTH
     height: int = VIRTUAL_HEIGHT
     fullscreen: bool = False
+    display_mode: str = "windowed"
     camera_shake: bool = True
     particles: bool = True
+    fps_limit: int = 60
+    ui_scale: float = 1.0
 
 
 @dataclass
@@ -112,6 +126,7 @@ class AudioSettings:
     master_volume: float = 0.75
     music_volume: float = 0.45
     sfx_volume: float = 0.85
+    interface_volume: float = 0.75
     mute: bool = False
 
 
@@ -163,15 +178,24 @@ class SettingsManager:
 
     def save(self) -> None:
         SAVE_DIR.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
-            json.dumps(asdict(self.settings), indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        try:
+            self.path.write_text(
+                json.dumps(asdict(self.settings), indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        except OSError:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_text(
+                json.dumps(asdict(self.settings), indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
 
     def _from_dict(self, data: dict[str, Any]) -> GameSettings:
         base = GameSettings()
-        video = VideoSettings(**{**asdict(base.video), **data.get("video", {})})
-        audio = AudioSettings(**{**asdict(base.audio), **data.get("audio", {})})
+        video_data = data.get("video", {})
+        audio_data = data.get("audio", {})
+        video = VideoSettings(**{**asdict(base.video), **video_data})
+        audio = AudioSettings(**{**asdict(base.audio), **audio_data})
         gameplay = GameplaySettings(
             **{**asdict(base.gameplay), **data.get("gameplay", {})}
         )
