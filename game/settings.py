@@ -131,6 +131,10 @@ class VideoSettings:
     allow_unverified_assets: bool = False
     fps_limit: int = 60
     ui_scale: float = 1.0
+    render_scale: float = 1.0
+    vsync: bool = False
+    borderless: bool = False
+    screen_shake_strength: float = 1.0
 
 
 @dataclass
@@ -140,6 +144,9 @@ class AudioSettings:
     sfx_volume: float = 0.85
     interface_volume: float = 0.75
     mute: bool = False
+    announcer_volume: float = 0.8
+    ambience_volume: float = 0.6
+    mute_when_unfocused: bool = False
 
 
 @dataclass
@@ -148,6 +155,22 @@ class GameplaySettings:
     rounds_to_win: int = ROUNDS_TO_WIN
     round_seconds: int = ROUND_SECONDS
     training_infinite_energy: bool = True
+    pause_on_focus_loss: bool = True
+    input_history: bool = False
+    language: str = "ru"
+
+@dataclass
+class AccessibilitySettings:
+    reduced_motion: bool = False
+    reduced_flashes: bool = False
+    high_contrast: bool = False
+    colorblind_indicators: bool = False
+    large_text: bool = False
+    subtitles: bool = True
+    visual_sound_indicators: bool = False
+    hold_assistance: bool = False
+    background_movement: bool = True
+    screen_shake_strength: float = 1.0
 
 
 @dataclass
@@ -162,10 +185,12 @@ class ControlSettings:
 
 @dataclass
 class GameSettings:
+    version: int = 2
     video: VideoSettings = field(default_factory=VideoSettings)
     audio: AudioSettings = field(default_factory=AudioSettings)
     gameplay: GameplaySettings = field(default_factory=GameplaySettings)
     controls: ControlSettings = field(default_factory=ControlSettings)
+    accessibility: AccessibilitySettings = field(default_factory=AccessibilitySettings)
 
 
 class SettingsManager:
@@ -191,6 +216,7 @@ class SettingsManager:
         video_data = _object(data.get("video"))
         audio_data = _object(data.get("audio"))
         gameplay_data = _object(data.get("gameplay"))
+        accessibility_data = _object(data.get("accessibility"))
         video = VideoSettings(
             width=_resolution_dimension(video_data.get("width"), base.video.width),
             height=_resolution_dimension(video_data.get("height"), base.video.height),
@@ -214,6 +240,10 @@ class SettingsManager:
             allow_unverified_assets=_boolean(video_data.get("allow_unverified_assets"), base.video.allow_unverified_assets),
             fps_limit=_choice_int(video_data.get("fps_limit"), base.video.fps_limit, set(FPS_OPTIONS)),
             ui_scale=_bounded_float(video_data.get("ui_scale"), base.video.ui_scale, 0.75, 2.0),
+            render_scale=_bounded_float(video_data.get("render_scale"),base.video.render_scale,.5,1.0),
+            vsync=_boolean(video_data.get("vsync"),base.video.vsync),
+            borderless=_boolean(video_data.get("borderless"),base.video.borderless),
+            screen_shake_strength=_bounded_float(video_data.get("screen_shake_strength"),base.video.screen_shake_strength,0,1),
         )
         audio = AudioSettings(
             master_volume=_bounded_float(audio_data.get("master_volume"), base.audio.master_volume, 0.0, 1.0),
@@ -226,6 +256,9 @@ class SettingsManager:
                 1.0,
             ),
             mute=_boolean(audio_data.get("mute"), base.audio.mute),
+            announcer_volume=_bounded_float(audio_data.get("announcer_volume"),base.audio.announcer_volume,0,1),
+            ambience_volume=_bounded_float(audio_data.get("ambience_volume"),base.audio.ambience_volume,0,1),
+            mute_when_unfocused=_boolean(audio_data.get("mute_when_unfocused"),base.audio.mute_when_unfocused),
         )
         gameplay = GameplaySettings(
             difficulty=_choice(
@@ -249,6 +282,9 @@ class SettingsManager:
                 gameplay_data.get("training_infinite_energy"),
                 base.gameplay.training_infinite_energy,
             ),
+            pause_on_focus_loss=_boolean(gameplay_data.get("pause_on_focus_loss"),base.gameplay.pause_on_focus_loss),
+            input_history=_boolean(gameplay_data.get("input_history"),base.gameplay.input_history),
+            language=_choice(gameplay_data.get("language"),base.gameplay.language,{"ru","en"}),
         )
         controls_data = _object(data.get("controls"))
         keyboard_data = _object(controls_data.get("keyboard"))
@@ -269,7 +305,9 @@ class SettingsManager:
                 base.controls.gamepad_enabled,
             ),
         )
-        return GameSettings(video=video, audio=audio, gameplay=gameplay, controls=controls)
+        accessibility=AccessibilitySettings(
+            reduced_motion=_boolean(accessibility_data.get("reduced_motion"),video.reduced_motion),reduced_flashes=_boolean(accessibility_data.get("reduced_flashes"),video.reduced_flashes),high_contrast=_boolean(accessibility_data.get("high_contrast"),False),colorblind_indicators=_boolean(accessibility_data.get("colorblind_indicators"),video.colorblind_indicators),large_text=_boolean(accessibility_data.get("large_text"),False),subtitles=_boolean(accessibility_data.get("subtitles"),True),visual_sound_indicators=_boolean(accessibility_data.get("visual_sound_indicators"),False),hold_assistance=_boolean(accessibility_data.get("hold_assistance"),False),background_movement=_boolean(accessibility_data.get("background_movement"),video.background_animation),screen_shake_strength=_bounded_float(accessibility_data.get("screen_shake_strength"),video.screen_shake_strength,0,1))
+        return GameSettings(version=2,video=video, audio=audio, gameplay=gameplay, controls=controls,accessibility=accessibility)
 
 
 def clamp(value: float, low: float, high: float) -> float:
