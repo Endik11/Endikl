@@ -14,6 +14,18 @@ LOGGER_NAME = "mortal_end"
 GAME_VERSION = "0.1.0-stage1"
 
 
+class WindowsSafeRotatingFileHandler(RotatingFileHandler):
+    """Keep logging when another Windows process briefly owns the log file."""
+
+    def doRollover(self) -> None:
+        try:
+            super().doRollover()
+        except PermissionError:
+            if self.stream:
+                self.stream.close()
+            self.stream = self._open()
+
+
 def configure_logging(debug: bool = False, log_path: Path = LOG_PATH) -> logging.Logger:
     """Configure the game logger once and fall back to stderr if files are unavailable."""
     logger = logging.getLogger(LOGGER_NAME)
@@ -28,7 +40,7 @@ def configure_logging(debug: bool = False, log_path: Path = LOG_PATH) -> logging
     )
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        handler: logging.Handler = RotatingFileHandler(
+        handler: logging.Handler = WindowsSafeRotatingFileHandler(
             log_path,
             maxBytes=1_000_000,
             backupCount=3,
