@@ -23,5 +23,20 @@ class AnimationGraph:
     def clip_for_snapshot(self, visual: FighterVisualDefinition, snapshot) -> str:
         if getattr(snapshot, "attack_id", ""):
             return visual.attack_clip
-        field = self.STATE_CLIPS.get(getattr(snapshot, "state", "IDLE"), "idle_clip")
+        state = getattr(snapshot, "state", "IDLE")
+        # These authored clips are shared by every fighter and keep the
+        # procedural combat rig readable while its hitboxes stay simulation-owned.
+        state_clips = {
+            "BLOCK_HIGH": "block_high",
+            "BLOCK_LOW": "block_high",
+            "BLOCK_STUN": "block_high",
+            "CROUCH": "crouch",
+            "AIRBORNE": "airborne",
+            "JUMP_START": "airborne",
+            "LAUNCHED": "airborne",
+            "THROWN": visual.defeat_clip,
+        }
+        if state in state_clips:
+            return state_clips[state]
+        field = self.STATE_CLIPS.get(state, "idle_clip")
         return getattr(visual, field)

@@ -16,6 +16,7 @@ from game.settings import ROOT_DIR
 from game.visual.animation_clip import AnimationClip
 from game.visual.animation_graph import AnimationGraph
 from game.visual.animation_player import AnimationPlayer
+from game.visual.arena_renderer import ArenaRenderer
 from game.visual.camera_controller import CameraController
 from game.visual.effects_manager import EffectsManager
 from game.visual.fighter_renderer import FighterRenderer
@@ -24,7 +25,7 @@ from game.visual.lighting import LightingRenderer
 from game.visual.particle_system import ParticleSystem
 from game.visual.screen_effects import ScreenEffects
 from game.visual.skeleton import Skeleton
-from game.visual.visual_constants import MAX_SHAKE_PIXELS
+from game.visual.visual_constants import GROUND_Y, MAX_SHAKE_PIXELS
 
 
 def registry() -> ContentRegistry:
@@ -113,6 +114,13 @@ def test_camera_boundaries_smoothing_shake_and_reduced_motion() -> None:
     assert camera.shake < 12
 
 
+def test_arena_ground_uses_the_same_camera_transform_as_fighters() -> None:
+    camera = CameraController(y=494, zoom=1.08)
+    camera._phase = 0
+    assert ArenaRenderer.ground_screen_y(camera) == camera.world_to_screen(0, GROUND_Y)[1]
+    assert ArenaRenderer.ground_screen_y(camera) != GROUND_Y
+
+
 def test_hud_health_meter_segments_and_font_cache() -> None:
     pygame.font.init()
     hud = HudRenderer(registry())
@@ -155,6 +163,7 @@ def test_verified_combat_renders_load_and_draw_over_procedural_fallback() -> Non
     pygame.init()
     content = registry()
     renderer = FighterRenderer(content)
+    assert renderer.USE_STICKMAN_COMBAT
     kael = renderer._load_combat_render("kael")
     sable = renderer._load_combat_render("sable")
     kael_attack = renderer._load_combat_render("kael", "attack")

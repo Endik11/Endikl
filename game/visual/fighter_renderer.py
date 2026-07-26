@@ -9,11 +9,13 @@ from .animation_graph import AnimationGraph
 from .animation_player import AnimationPlayer
 from .fighter_visual import FighterVisualState
 from ..platform_paths import asset_path
+from .pose import BonePose, Pose
 from .procedural_rig import build_skeleton
 from .shadow_renderer import ShadowRenderer
 
 
 class FighterRenderer:
+    USE_STICKMAN_COMBAT = True
     # These verified renders are visual-only. Combat coordinates still come
     # from the simulation snapshot and remain independent from the artwork.
     COMBAT_RENDER_SPECS = {
@@ -52,6 +54,15 @@ class FighterRenderer:
         if getattr(getattr(settings, "video", settings), "shadows", True):
             self.shadow.draw(surface, origin[0], origin[1], int(118 * visual.scale), visual.palette_roles.get("shadow", (0, 0, 0)))
         render_mode = self._combat_render_mode(snap)
+        pose = self._combat_pose(state.player.sample(facing=1), snap, state)
+        skeleton = build_skeleton(rig)
+        if self.USE_STICKMAN_COMBAT:
+            transforms = sorted(skeleton.world_transforms(pose, origin, snap.facing, visual.scale).values(), key=lambda item: item.draw_order)
+            self._draw_stickman(surface, transforms, visual, snap, origin[1])
+            if snap.attack_id:
+                self._draw_attack_flash(surface, origin, snap.attack_id, snap.facing, visual.scale)
+            self._draw_combat_state_effect(surface, snap, origin, state, render_mode)
+            return
         combat_render = self._load_combat_render(snap.fighter_id, render_mode)
         if combat_render is None and render_mode != "idle":
             render_mode = "idle"
@@ -59,8 +70,6 @@ class FighterRenderer:
         if combat_render is None:
             # Skeleton owns world-space mirroring. Applying facing in the
             # animation clip as well mirrors local offsets twice.
-            pose = state.player.sample(facing=1)
-            skeleton = build_skeleton(rig)
             transforms = sorted(skeleton.world_transforms(pose, origin, snap.facing, visual.scale).values(), key=lambda item: item.draw_order)
             for transform in transforms:
                 if transform.id not in visual.attachments and transform.shape in {"cape", "blade"}:
@@ -72,6 +81,120 @@ class FighterRenderer:
         if snap.attack_id:
             self._draw_attack_flash(surface, origin, snap.attack_id, snap.facing, visual.scale)
         self._draw_combat_state_effect(surface, snap, origin, state, render_mode)
+
+    def _combat_pose(self, pose: Pose, snap, state: FighterVisualState) -> Pose:
+        """Add combat-specific limb motion to the authored animation clip."""
+        bones = dict(pose.bones)
+        progress = max(0.0, min(1.0, state.player.frame / 24.0))
+        drive = math.sin(progress * math.pi)
+
+        def add(bone_id: str, translation: tuple[float, float], rotation: float) -> None:
+            current = pose.bone(bone_id)
+            bones[bone_id] = BonePose(
+                (current.translation[0] + translation[0], current.translation[1] + translation[1]),
+                current.rotation + rotation,
+                current.scale,
+                current.alpha,
+            )
+
+        attack_id = getattr(snap, "attack_id", "")
+        state_name = getattr(snap, "state", "IDLE")
+        if attack_id:
+            if "kick" in attack_id:
+                add("right_thigh", (20.0 * drive, -10.0 * drive), -44.0 * drive)
+                add("right_shin", (12.0 * drive, -8.0 * drive), 52.0 * drive)
+            else:
+                add("right_upper_arm", (14.0 * drive, -8.0 * drive), -34.0 * drive)
+                add("right_forearm", (20.0 * drive, -12.0 * drive), -58.0 * drive)
+                if "special" in attack_id or "super" in attack_id:
+                    add("left_forearm", (12.0 * drive, -8.0 * drive), -24.0 * drive)
+        elif state_name in {"BLOCK_HIGH", "BLOCK_LOW", "BLOCK_STUN"}:
+            add("left_forearm", (14.0, -18.0), -58.0)
+            add("right_forearm", (-14.0, -18.0), 58.0)
+        elif state_name in self.REACTION_STATES:
+            recovery = max(0.0, 1.0 - min(1.0, state.player.frame / 22.0))
+            add("torso_upper", (0.0, 16.0 * recovery), 28.0 * recovery)
+            add("head", (10.0 * recovery, 8.0 * recovery), 18.0 * recovery)
+        return Pose(bones)
+
+    @staticmethod
+    def _stickman_end(transform) -> tuple[float, float]:
+        radians = math.radians(transform.rotation - 90)
+        return (
+            transform.x + math.cos(radians) * transform.length,
+            transform.y + math.sin(radians) * transform.length,
+        )
+
+    @staticmethod
+    def _stickman_floor_point(point: tuple[float, float], floor_y: int) -> tuple[int, int]:
+        return int(point[0]), min(int(point[1]), int(floor_y))
+
+    def _draw_stickman(self, surface: pygame.Surface, transforms, visual, snap, floor_y: int) -> None:
+        roles = visual.palette_roles
+        outline = (7, 10, 15)
+        primary = roles.get("primary", (220, 220, 220))
+        secondary = roles.get("secondary", primary)
+        accent = roles.get("accent", (240, 240, 240))
+        skin = roles.get("skin", (190, 145, 115))
+        for transform in transforms:
+            if transform.id == "root":
+                continue
+            color = roles.get(transform.palette_role, primary)
+            if transform.id in {"left_upper_arm", "right_upper_arm", "left_thigh", "right_thigh"}:
+                color = primary
+            elif transform.id in {"left_forearm", "right_forearm", "left_shin", "right_shin"}:
+                color = secondary
+            elif transform.id in {"left_hand", "right_hand", "left_foot", "right_foot", "energy_core"}:
+                color = accent
+
+            if transform.id == "head":
+                center = self._stickman_floor_point((transform.x, transform.y), floor_y - 18)
+                radius = max(13, int(transform.thickness * 0.62))
+                pygame.draw.circle(surface, outline, center, radius + 4)
+                pygame.draw.circle(surface, skin, center, radius)
+                facing = 1 if snap.facing >= 0 else -1
+                eye = (center[0] + facing * max(4, radius // 2), center[1] - max(2, radius // 4))
+                pygame.draw.circle(surface, outline, eye, 2)
+                pygame.draw.line(surface, outline, (center[0] + facing * radius // 2, center[1] + 5), (center[0] + facing * radius, center[1] + 3), 2)
+                continue
+            if transform.id in {"left_foot", "right_foot"}:
+                x = int(transform.x)
+                y = int(floor_y - 7)
+                shoe = pygame.Rect(x - 15, y - 7, 30, 13)
+                pygame.draw.ellipse(surface, outline, shoe.inflate(6, 5))
+                pygame.draw.ellipse(surface, color, shoe)
+                continue
+            if transform.id == "pelvis":
+                center = self._stickman_floor_point((transform.x, transform.y), floor_y)
+                pelvis = pygame.Rect(0, 0, 48, 24)
+                pelvis.center = center
+                pygame.draw.ellipse(surface, outline, pelvis.inflate(8, 8))
+                pygame.draw.ellipse(surface, color, pelvis)
+                continue
+            if transform.shape == "blade":
+                self._draw_blade(surface, transform, accent)
+                continue
+            if transform.shape == "plate":
+                self._draw_plate(surface, transform, secondary)
+                continue
+            if transform.shape == "ribbon":
+                self._draw_ribbon(surface, transform, color)
+                continue
+
+            start = self._stickman_floor_point((transform.x, transform.y), floor_y)
+            end = self._stickman_floor_point(self._stickman_end(transform), floor_y)
+            width = max(5, int(transform.thickness * 0.72))
+            if transform.shape in {"circle", "ellipse"}:
+                radius = max(5, width // 2 + 2)
+                pygame.draw.circle(surface, outline, start, radius + 3)
+                pygame.draw.circle(surface, color, start, radius)
+            else:
+                pygame.draw.line(surface, outline, start, end, width + 7)
+                pygame.draw.line(surface, color, start, end, width)
+                pygame.draw.circle(surface, outline, start, width // 2 + 3)
+                pygame.draw.circle(surface, color, start, width // 2)
+                pygame.draw.circle(surface, outline, end, width // 2 + 3)
+                pygame.draw.circle(surface, color, end, width // 2)
 
     @staticmethod
     def _combat_render_mode(snap) -> str:

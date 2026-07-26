@@ -11,6 +11,10 @@ class ArenaRenderer:
     def __init__(self) -> None:
         self._cache: dict[str, list[ArenaLayer]] = {}
 
+    @staticmethod
+    def ground_screen_y(camera) -> int:
+        return camera.world_to_screen(0, GROUND_Y)[1]
+
     def draw(self, surface: pygame.Surface, visual: ArenaVisualDefinition, camera, t: float = 0.0) -> None:
         layers = self._cache.setdefault(visual.id, [ArenaLayer(layer, visual.palette) for layer in visual.layers])
         for layer, raw in zip(layers, visual.layers):
@@ -20,8 +24,12 @@ class ArenaRenderer:
             surface.blit(surf, (-offset, 0))
             if offset:
                 surface.blit(surf, (VIRTUAL_WIDTH - offset, 0))
-        pygame.draw.rect(surface, visual.palette[0], (0, GROUND_Y, VIRTUAL_WIDTH, 136))
-        horizon = GROUND_Y + 2
+        # The fighters use the camera's world-to-screen transform. Keeping
+        # the floor at a hard-coded screen y makes them float as the camera
+        # follows the pair vertically.
+        ground_screen_y = self.ground_screen_y(camera)
+        pygame.draw.rect(surface, visual.palette[0], (0, ground_screen_y, VIRTUAL_WIDTH, max(0, 720 - ground_screen_y)))
+        horizon = ground_screen_y + 2
         floor = visual.palette[0]
         floor_color = tuple(max(0, min(255, channel + 8)) for channel in floor)
         pygame.draw.polygon(surface, floor_color, ((0, horizon), (VIRTUAL_WIDTH, horizon), (VIRTUAL_WIDTH, 720), (0, 720)))
