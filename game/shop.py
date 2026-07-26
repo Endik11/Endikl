@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pygame
 
-from .debug import log_error
+from .debug import log_error, log_event
 from .menu import draw_background, draw_text
 from .settings import COLORS, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
 
@@ -112,7 +112,7 @@ class ShopScreen:
         self.category_index = 0
         self.selected_index = 0
         self.message = "Добро пожаловать в витрину предметов"
-        log_error("Shop catalog loaded")
+        log_event("Shop catalog loaded items=%s", len(self.items))
         self.categories = [
             ("skin", "Скины"),
             ("costume", "Костюмы"),

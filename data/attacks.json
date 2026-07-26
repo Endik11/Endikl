@@ -1,0 +1,1524 @@
+{
+  "attacks": [
+    {
+      "id": "light_punch",
+      "owner_id": "common",
+      "display_name_key": "attack.light_punch.name",
+      "animation": "attack",
+      "startup_frames": 4,
+      "active_frames": 5,
+      "recovery_frames": 8,
+      "damage": 44,
+      "chip_damage": 6,
+      "hit_stun_frames": 11,
+      "block_stun_frames": 7,
+      "hit_level": "mid",
+      "knockback_x": 150,
+      "knockback_y": -20,
+      "energy_gain": 44,
+      "energy_cost": 0,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [],
+      "legacy_action_name": "light_punch",
+      "hitbox": [
+        36,
+        -162,
+        78,
+        43
+      ],
+      "cancel_start_frame": 4,
+      "cancel_end_frame": 8,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "4": [
+          {
+            "x": 36,
+            "y": -162,
+            "width": 78,
+            "height": 43,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "5": [
+          {
+            "x": 36,
+            "y": -162,
+            "width": 78,
+            "height": 43,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "6": [
+          {
+            "x": 36,
+            "y": -162,
+            "width": 78,
+            "height": 43,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "7": [
+          {
+            "x": 36,
+            "y": -162,
+            "width": 78,
+            "height": 43,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "8": [
+          {
+            "x": 36,
+            "y": -162,
+            "width": 78,
+            "height": 43,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": null,
+      "multi_hit_interval_frames": 1
+    },
+    {
+      "id": "heavy_punch",
+      "owner_id": "common",
+      "display_name_key": "attack.heavy_punch.name",
+      "animation": "attack",
+      "startup_frames": 8,
+      "active_frames": 7,
+      "recovery_frames": 16,
+      "damage": 88,
+      "chip_damage": 14,
+      "hit_stun_frames": 17,
+      "block_stun_frames": 11,
+      "hit_level": "mid",
+      "knockback_x": 290,
+      "knockback_y": -70,
+      "energy_gain": 70,
+      "energy_cost": 0,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [
+        "knockdown"
+      ],
+      "legacy_action_name": "heavy_punch",
+      "hitbox": [
+        40,
+        -174,
+        92,
+        58
+      ],
+      "cancel_start_frame": 8,
+      "cancel_end_frame": 14,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "8": [
+          {
+            "x": 40,
+            "y": -174,
+            "width": 92,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "9": [
+          {
+            "x": 40,
+            "y": -174,
+            "width": 92,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "10": [
+          {
+            "x": 40,
+            "y": -174,
+            "width": 92,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "11": [
+          {
+            "x": 40,
+            "y": -174,
+            "width": 92,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "12": [
+          {
+            "x": 40,
+            "y": -174,
+            "width": 92,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "13": [
+          {
+            "x": 40,
+            "y": -174,
+            "width": 92,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "14": [
+          {
+            "x": 40,
+            "y": -174,
+            "width": 92,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": null,
+      "multi_hit_interval_frames": 1
+    },
+    {
+      "id": "light_kick",
+      "owner_id": "common",
+      "display_name_key": "attack.light_kick.name",
+      "animation": "attack",
+      "startup_frames": 5,
+      "active_frames": 5,
+      "recovery_frames": 10,
+      "damage": 50,
+      "chip_damage": 7,
+      "hit_stun_frames": 12,
+      "block_stun_frames": 7,
+      "hit_level": "low",
+      "knockback_x": 170,
+      "knockback_y": -25,
+      "energy_gain": 48,
+      "energy_cost": 0,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [],
+      "legacy_action_name": "light_kick",
+      "hitbox": [
+        32,
+        -88,
+        96,
+        46
+      ],
+      "cancel_start_frame": 5,
+      "cancel_end_frame": 9,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "5": [
+          {
+            "x": 32,
+            "y": -88,
+            "width": 96,
+            "height": 46,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "6": [
+          {
+            "x": 32,
+            "y": -88,
+            "width": 96,
+            "height": 46,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "7": [
+          {
+            "x": 32,
+            "y": -88,
+            "width": 96,
+            "height": 46,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "8": [
+          {
+            "x": 32,
+            "y": -88,
+            "width": 96,
+            "height": 46,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "9": [
+          {
+            "x": 32,
+            "y": -88,
+            "width": 96,
+            "height": 46,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": null,
+      "multi_hit_interval_frames": 1
+    },
+    {
+      "id": "heavy_kick",
+      "owner_id": "common",
+      "display_name_key": "attack.heavy_kick.name",
+      "animation": "attack",
+      "startup_frames": 10,
+      "active_frames": 8,
+      "recovery_frames": 19,
+      "damage": 102,
+      "chip_damage": 17,
+      "hit_stun_frames": 20,
+      "block_stun_frames": 12,
+      "hit_level": "mid",
+      "knockback_x": 360,
+      "knockback_y": -135,
+      "energy_gain": 80,
+      "energy_cost": 0,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [
+        "knockdown"
+      ],
+      "legacy_action_name": "heavy_kick",
+      "hitbox": [
+        38,
+        -112,
+        118,
+        58
+      ],
+      "cancel_start_frame": 10,
+      "cancel_end_frame": 17,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "10": [
+          {
+            "x": 38,
+            "y": -112,
+            "width": 118,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "11": [
+          {
+            "x": 38,
+            "y": -112,
+            "width": 118,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "12": [
+          {
+            "x": 38,
+            "y": -112,
+            "width": 118,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "13": [
+          {
+            "x": 38,
+            "y": -112,
+            "width": 118,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "14": [
+          {
+            "x": 38,
+            "y": -112,
+            "width": 118,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "15": [
+          {
+            "x": 38,
+            "y": -112,
+            "width": 118,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "16": [
+          {
+            "x": 38,
+            "y": -112,
+            "width": 118,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "17": [
+          {
+            "x": 38,
+            "y": -112,
+            "width": 118,
+            "height": 58,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": null,
+      "multi_hit_interval_frames": 1
+    },
+    {
+      "id": "crouch_punch",
+      "owner_id": "common",
+      "display_name_key": "attack.crouch_punch.name",
+      "animation": "attack",
+      "startup_frames": 4,
+      "active_frames": 5,
+      "recovery_frames": 8,
+      "damage": 38,
+      "chip_damage": 5,
+      "hit_stun_frames": 10,
+      "block_stun_frames": 6,
+      "hit_level": "low",
+      "knockback_x": 120,
+      "knockback_y": 0,
+      "energy_gain": 36,
+      "energy_cost": 0,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [
+        "crouch_only"
+      ],
+      "legacy_action_name": "crouch_punch",
+      "hitbox": [
+        28,
+        -112,
+        76,
+        42
+      ],
+      "cancel_start_frame": 4,
+      "cancel_end_frame": 8,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "4": [
+          {
+            "x": 28,
+            "y": -112,
+            "width": 76,
+            "height": 42,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "5": [
+          {
+            "x": 28,
+            "y": -112,
+            "width": 76,
+            "height": 42,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "6": [
+          {
+            "x": 28,
+            "y": -112,
+            "width": 76,
+            "height": 42,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "7": [
+          {
+            "x": 28,
+            "y": -112,
+            "width": 76,
+            "height": 42,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "8": [
+          {
+            "x": 28,
+            "y": -112,
+            "width": 76,
+            "height": 42,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": null,
+      "multi_hit_interval_frames": 1
+    },
+    {
+      "id": "crouch_kick",
+      "owner_id": "common",
+      "display_name_key": "attack.crouch_kick.name",
+      "animation": "attack",
+      "startup_frames": 5,
+      "active_frames": 6,
+      "recovery_frames": 12,
+      "damage": 64,
+      "chip_damage": 8,
+      "hit_stun_frames": 16,
+      "block_stun_frames": 8,
+      "hit_level": "low",
+      "knockback_x": 210,
+      "knockback_y": 0,
+      "energy_gain": 54,
+      "energy_cost": 0,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [
+        "crouch_only"
+      ],
+      "legacy_action_name": "crouch_kick",
+      "hitbox": [
+        34,
+        -66,
+        116,
+        38
+      ],
+      "cancel_start_frame": 5,
+      "cancel_end_frame": 10,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "5": [
+          {
+            "x": 34,
+            "y": -66,
+            "width": 116,
+            "height": 38,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "6": [
+          {
+            "x": 34,
+            "y": -66,
+            "width": 116,
+            "height": 38,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "7": [
+          {
+            "x": 34,
+            "y": -66,
+            "width": 116,
+            "height": 38,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "8": [
+          {
+            "x": 34,
+            "y": -66,
+            "width": 116,
+            "height": 38,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "9": [
+          {
+            "x": 34,
+            "y": -66,
+            "width": 116,
+            "height": 38,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "10": [
+          {
+            "x": 34,
+            "y": -66,
+            "width": 116,
+            "height": 38,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": null,
+      "multi_hit_interval_frames": 1
+    },
+    {
+      "id": "air_kick",
+      "owner_id": "common",
+      "display_name_key": "attack.air_kick.name",
+      "animation": "attack",
+      "startup_frames": 5,
+      "active_frames": 11,
+      "recovery_frames": 13,
+      "damage": 78,
+      "chip_damage": 10,
+      "hit_stun_frames": 17,
+      "block_stun_frames": 10,
+      "hit_level": "overhead",
+      "knockback_x": 250,
+      "knockback_y": 120,
+      "energy_gain": 65,
+      "energy_cost": 0,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [
+        "air_only"
+      ],
+      "legacy_action_name": "air_kick",
+      "hitbox": [
+        28,
+        -128,
+        116,
+        72
+      ],
+      "cancel_start_frame": 5,
+      "cancel_end_frame": 15,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "5": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "6": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "7": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "8": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "9": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "10": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "11": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "12": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "13": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "14": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "15": [
+          {
+            "x": 28,
+            "y": -128,
+            "width": 116,
+            "height": 72,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": null,
+      "multi_hit_interval_frames": 1
+    },
+    {
+      "id": "thunder_boundary",
+      "owner_id": "common",
+      "display_name_key": "attack.thunder_boundary.name",
+      "animation": "attack",
+      "startup_frames": 7,
+      "active_frames": 13,
+      "recovery_frames": 19,
+      "damage": 120,
+      "chip_damage": 26,
+      "hit_stun_frames": 21,
+      "block_stun_frames": 12,
+      "hit_level": "mid",
+      "knockback_x": 520,
+      "knockback_y": -130,
+      "energy_gain": 90,
+      "energy_cost": 180,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [
+        "special",
+        "projectile"
+      ],
+      "legacy_action_name": "ember_surge",
+      "hitbox": [
+        44,
+        -152,
+        118,
+        84
+      ],
+      "cancel_start_frame": 7,
+      "cancel_end_frame": 19,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "7": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "8": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "9": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "10": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "11": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "12": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "13": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "14": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "15": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "16": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "17": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "18": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "19": [
+          {
+            "x": 44,
+            "y": -152,
+            "width": 118,
+            "height": 84,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": {
+        "projectile_id": "thunder_boundary_wave",
+        "spawn_frame": 7,
+        "offset_x": 70,
+        "offset_y": -125,
+        "velocity_x": 12,
+        "velocity_y": 0,
+        "acceleration_x": 0,
+        "acceleration_y": 0,
+        "lifetime_frames": 90,
+        "width": 64,
+        "height": 70,
+        "damage": 120,
+        "chip_damage": 26,
+        "hit_level": "mid",
+        "hit_stun_frames": 21,
+        "block_stun_frames": 12,
+        "priority": 2,
+        "durability": 1,
+        "multi_hit": false,
+        "multi_hit_interval_frames": 1,
+        "destroy_on_hit": true,
+        "destroy_on_block": true,
+        "destroy_outside_arena": true,
+        "properties": []
+      },
+      "multi_hit_interval_frames": 1
+    },
+    {
+      "id": "bronze_sky_break",
+      "owner_id": "common",
+      "display_name_key": "attack.bronze_sky_break.name",
+      "animation": "attack",
+      "startup_frames": 12,
+      "active_frames": 11,
+      "recovery_frames": 27,
+      "damage": 180,
+      "chip_damage": 42,
+      "hit_stun_frames": 29,
+      "block_stun_frames": 17,
+      "hit_level": "overhead",
+      "knockback_x": 760,
+      "knockback_y": -380,
+      "energy_gain": 120,
+      "energy_cost": 300,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [
+        "launcher",
+        "special"
+      ],
+      "legacy_action_name": "rift_breaker",
+      "hitbox": [
+        34,
+        -190,
+        132,
+        145
+      ],
+      "cancel_start_frame": 12,
+      "cancel_end_frame": 22,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "12": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "13": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "14": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "15": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "16": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "17": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "18": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "19": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "20": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "21": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "22": [
+          {
+            "x": 34,
+            "y": -190,
+            "width": 132,
+            "height": 145,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": null,
+      "multi_hit_interval_frames": 1
+    },
+    {
+      "id": "rune_shift",
+      "owner_id": "common",
+      "display_name_key": "attack.rune_shift.name",
+      "animation": "attack",
+      "startup_frames": 6,
+      "active_frames": 12,
+      "recovery_frames": 15,
+      "damage": 95,
+      "chip_damage": 18,
+      "hit_stun_frames": 18,
+      "block_stun_frames": 11,
+      "hit_level": "mid",
+      "knockback_x": 450,
+      "knockback_y": -60,
+      "energy_gain": 70,
+      "energy_cost": 160,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [
+        "special"
+      ],
+      "legacy_action_name": "veil_step",
+      "hitbox": [
+        18,
+        -145,
+        116,
+        74
+      ],
+      "cancel_start_frame": 6,
+      "cancel_end_frame": 17,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "6": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "7": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "8": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "9": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "10": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "11": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "12": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "13": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "14": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "15": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "16": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "17": [
+          {
+            "x": 18,
+            "y": -145,
+            "width": 116,
+            "height": 74,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": null,
+      "multi_hit_interval_frames": 1
+    },
+    {
+      "id": "storm_limit_verdict",
+      "owner_id": "common",
+      "display_name_key": "attack.storm_limit_verdict.name",
+      "animation": "attack",
+      "startup_frames": 17,
+      "active_frames": 17,
+      "recovery_frames": 37,
+      "damage": 310,
+      "chip_damage": 80,
+      "hit_stun_frames": 39,
+      "block_stun_frames": 24,
+      "hit_level": "unblockable",
+      "knockback_x": 980,
+      "knockback_y": -460,
+      "energy_gain": 0,
+      "energy_cost": 1000,
+      "cancel_on_hit": [],
+      "cancel_on_block": [],
+      "properties": [
+        "super"
+      ],
+      "legacy_action_name": "super",
+      "hitbox": [
+        20,
+        -205,
+        185,
+        180
+      ],
+      "cancel_start_frame": 17,
+      "cancel_end_frame": 33,
+      "hit_stop_frames": 3,
+      "block_stop_frames": 2,
+      "movement": {
+        "x_per_frame": 0,
+        "y_per_frame": 0
+      },
+      "hitboxes_by_frame": {
+        "17": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "18": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "19": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "20": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "21": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "22": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "23": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "24": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "25": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "26": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "27": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "28": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "29": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "30": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "31": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "32": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ],
+        "33": [
+          {
+            "x": 20,
+            "y": -205,
+            "width": 185,
+            "height": 180,
+            "hit_id": "main",
+            "priority": 1
+          }
+        ]
+      },
+      "hurtbox_overrides_by_frame": {},
+      "invulnerability_frames": [],
+      "armor_frames": [],
+      "projectile_definition": null,
+      "multi_hit_interval_frames": 1
+    }
+  ],
+  "data_version": 2,
+  "simulation_fps": 60
+}

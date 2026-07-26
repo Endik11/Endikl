@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .collision import AttackData, BoxSpec
+from .collision import AttackData
+from .content_registry import get_default_registry
 
 
 @dataclass(frozen=True)
@@ -48,103 +49,41 @@ class InputBuffer:
         return command
 
 
-SPECIAL_MOVES = {
-    "ember_surge": AttackData(
-        name="Пепельный всплеск",
-        startup=0.12,
-        active=0.22,
-        recovery=0.32,
-        damage=120,
-        chip_damage=26,
-        hit_stun=0.35,
-        block_stun=0.2,
-        knockback_x=520,
-        knockback_y=-130,
-        hitbox=BoxSpec(44, -152, 118, 84),
-        energy_gain=90,
-        energy_cost=180,
-        cancellable=True,
-    ),
-    "rift_breaker": AttackData(
-        name="Разрушитель разлома",
-        startup=0.2,
-        active=0.18,
-        recovery=0.45,
-        damage=180,
-        chip_damage=42,
-        hit_stun=0.48,
-        block_stun=0.28,
-        knockback_x=760,
-        knockback_y=-380,
-        hitbox=BoxSpec(34, -190, 132, 145),
-        energy_gain=120,
-        energy_cost=300,
-        launcher=True,
-    ),
-    "veil_step": AttackData(
-        name="Шаг вуали",
-        startup=0.1,
-        active=0.2,
-        recovery=0.25,
-        damage=95,
-        chip_damage=18,
-        hit_stun=0.3,
-        block_stun=0.18,
-        knockback_x=450,
-        knockback_y=-60,
-        hitbox=BoxSpec(18, -145, 116, 74),
-        energy_gain=70,
-        energy_cost=160,
-        cancellable=True,
-    ),
-    "super": AttackData(
-        name="Приговор звёздного падения",
-        startup=0.28,
-        active=0.28,
-        recovery=0.62,
-        damage=310,
-        chip_damage=80,
-        hit_stun=0.65,
-        block_stun=0.4,
-        knockback_x=980,
-        knockback_y=-460,
-        hitbox=BoxSpec(20, -205, 185, 180),
-        energy_gain=0,
-        energy_cost=1000,
-        finisher="brutality",
-    ),
-}
+def _build_compatibility_views():
+    from .definition_adapters import build_legacy_attack, build_legacy_combo
+    registry = get_default_registry()
+    attacks = {
+        definition.legacy_action_name: build_legacy_attack(
+            definition, registry.localization.get(definition.display_name_key)
+        )
+        for definition in registry.attacks.values()
+        if definition.legacy_action_name in {"ember_surge", "rift_breaker", "veil_step", "super"}
+    }
+    combos = tuple(
+        build_legacy_combo(
+            combo,
+            build_legacy_attack(registry.get_attack(combo.resulting_attack_id), registry.localization.get(registry.get_attack(combo.resulting_attack_id).display_name_key)),
+            registry.localization.get(combo.display_name_key),
+        )
+        for combo in registry.combos.values() if combo.enabled
+    )
+    return attacks, combos
 
 
-DEFAULT_COMBOS = (
-    ComboMove(
-        "Пепельный всплеск",
-        ("down", "forward", "light_punch"),
-        SPECIAL_MOVES["ember_surge"],
-    ),
-    ComboMove(
-        "Разрушитель разлома",
-        ("back", "down", "forward", "heavy_punch"),
-        SPECIAL_MOVES["rift_breaker"],
-        max_age=0.95,
-    ),
-    ComboMove(
-        "Шаг вуали",
-        ("down", "back", "light_kick"),
-        SPECIAL_MOVES["veil_step"],
-    ),
-    ComboMove(
-        "Приговор звёздного падения",
-        ("energy", "heavy_punch", "heavy_kick"),
-        SPECIAL_MOVES["super"],
-        max_age=0.5,
-    ),
-)
+SPECIAL_MOVES, DEFAULT_COMBOS = _build_compatibility_views()
+
+
+def refresh_combo_views() -> None:
+    global DEFAULT_COMBOS
+    attacks, combos = _build_compatibility_views()
+    SPECIAL_MOVES.clear()
+    SPECIAL_MOVES.update(attacks)
+    DEFAULT_COMBOS = combos
 
 
 class ComboSystem:
-    def __init__(self, moves: tuple[ComboMove, ...] = DEFAULT_COMBOS) -> None:
-        self.moves = moves
+    def __init__(self, moves: tuple[ComboMove, ...] | None = None) -> None:
+        self.moves = DEFAULT_COMBOS if moves is None else moves
 
     def match(self, buffer: InputBuffer, now: float, energy: int) -> AttackData | None:
         for move in sorted(self.moves, key=lambda m: len(m.sequence), reverse=True):
@@ -156,4 +95,3 @@ class ComboSystem:
                     buffer.clear()
                     return move.attack
         return None
-

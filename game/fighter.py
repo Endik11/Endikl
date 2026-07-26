@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import pygame
 
 from .animation import Animator
 from .collision import AttackData, BoxSpec, is_attack_active
 from .combos import ComboSystem, InputBuffer
+from .content_registry import get_default_registry
+from .definition_adapters import build_legacy_attack
+from .definitions import FighterDefinition
 from .settings import (
     AIR_MOVE_SPEED,
     COLORS,
@@ -24,177 +25,39 @@ from .settings import (
 from .sprites import SPRITE_ANCHOR, SPRITE_FACTORY
 
 
-BASE_ATTACKS = {
-    "light_punch": AttackData(
-        name="Быстрый jab",
-        startup=0.06,
-        active=0.08,
-        recovery=0.14,
-        damage=44,
-        chip_damage=6,
-        hit_stun=0.19,
-        block_stun=0.12,
-        knockback_x=150,
-        knockback_y=-20,
-        hitbox=BoxSpec(36, -162, 78, 43),
-        energy_gain=44,
-        cancellable=True,
-    ),
-    "heavy_punch": AttackData(
-        name="Могильный захват",
-        startup=0.14,
-        active=0.12,
-        recovery=0.26,
-        damage=88,
-        chip_damage=14,
-        hit_stun=0.29,
-        block_stun=0.18,
-        knockback_x=290,
-        knockback_y=-70,
-        hitbox=BoxSpec(40, -174, 92, 58),
-        energy_gain=70,
-    ),
-    "light_kick": AttackData(
-        name="Низкая игла",
-        startup=0.08,
-        active=0.09,
-        recovery=0.16,
-        damage=50,
-        chip_damage=7,
-        hit_stun=0.2,
-        block_stun=0.12,
-        knockback_x=170,
-        knockback_y=-25,
-        hitbox=BoxSpec(32, -88, 96, 46),
-        energy_gain=48,
-        cancellable=True,
-    ),
-    "heavy_kick": AttackData(
-        name="Поворотный heel",
-        startup=0.16,
-        active=0.14,
-        recovery=0.31,
-        damage=102,
-        chip_damage=17,
-        hit_stun=0.34,
-        block_stun=0.2,
-        knockback_x=360,
-        knockback_y=-135,
-        hitbox=BoxSpec(38, -112, 118, 58),
-        energy_gain=80,
-    ),
-    "crouch_punch": AttackData(
-        name="Пепельный удар",
-        startup=0.06,
-        active=0.08,
-        recovery=0.13,
-        damage=38,
-        chip_damage=5,
-        hit_stun=0.16,
-        block_stun=0.1,
-        knockback_x=120,
-        knockback_y=0,
-        hitbox=BoxSpec(28, -112, 76, 42),
-        energy_gain=36,
-        cancellable=True,
-    ),
-    "crouch_kick": AttackData(
-        name="Искра в лодыжке",
-        startup=0.09,
-        active=0.1,
-        recovery=0.2,
-        damage=64,
-        chip_damage=8,
-        hit_stun=0.26,
-        block_stun=0.14,
-        knockback_x=210,
-        knockback_y=0,
-        hitbox=BoxSpec(34, -66, 116, 38),
-        energy_gain=54,
-    ),
-    "air_kick": AttackData(
-        name="Падающая дуга",
-        startup=0.09,
-        active=0.18,
-        recovery=0.22,
-        damage=78,
-        chip_damage=10,
-        hit_stun=0.28,
-        block_stun=0.16,
-        knockback_x=250,
-        knockback_y=120,
-        hitbox=BoxSpec(28, -128, 116, 72),
-        energy_gain=65,
-    ),
-}
+_CONTENT = get_default_registry()
+BASE_ATTACKS: dict[str, AttackData] = {}
+
+
+def refresh_attack_views() -> None:
+    BASE_ATTACKS.clear()
+    BASE_ATTACKS.update({
+        definition.legacy_action_name: build_legacy_attack(
+            definition,
+            _CONTENT.localization.get(definition.display_name_key),
+        )
+        for definition in _CONTENT.attacks.values()
+        if definition.legacy_action_name in {
+            "light_punch", "heavy_punch", "light_kick", "heavy_kick",
+            "crouch_punch", "crouch_kick", "air_kick",
+        }
+    })
+    # Emergency content intentionally defines only two attacks; aliases keep
+    # every legacy input path safe without duplicating fallback definitions.
+    if "light_punch" in BASE_ATTACKS and "heavy_punch" in BASE_ATTACKS:
+        BASE_ATTACKS.setdefault("light_kick", BASE_ATTACKS["light_punch"])
+        BASE_ATTACKS.setdefault("heavy_kick", BASE_ATTACKS["heavy_punch"])
+        BASE_ATTACKS.setdefault("crouch_punch", BASE_ATTACKS["light_punch"])
+        BASE_ATTACKS.setdefault("crouch_kick", BASE_ATTACKS["heavy_punch"])
+        BASE_ATTACKS.setdefault("air_kick", BASE_ATTACKS["heavy_punch"])
+
+
+refresh_attack_views()
 
 FIGHTER_RENDER_SCALE = 1.14
 
 
-@dataclass(frozen=True)
-class FighterDefinition:
-    key: str
-    name: str
-    title: str
-    palette: tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]
-    speed: float = MOVE_SPEED
-    jump_speed: float = JUMP_SPEED
-    max_health: int = MAX_HEALTH
-    story: str = ""
-
-
-FIGHTER_DEFINITIONS = {
-    "kael": FighterDefinition(
-        key="kael",
-        name="Каэль Варин",
-        title="Пепельный страж",
-        palette=((205, 58, 65), (232, 181, 82), (35, 38, 46)),
-        story="Капитан границы, который несёт клятву кузни из города Эбонмир.",
-    ),
-    "sable": FighterDefinition(
-        key="sable",
-        name="Сейбл Нира",
-        title="Тень в полёте",
-        palette=((63, 201, 197), (142, 104, 207), (24, 28, 36)),
-        speed=MOVE_SPEED * 1.08,
-        jump_speed=JUMP_SPEED * 1.08,
-        story="Посыльная из скрытых мостов, где гравитация — всего лишь совет.",
-    ),
-    "orrin": FighterDefinition(
-        key="orrin",
-        name="Орин Вейл",
-        title="Железный ритм",
-        palette=((90, 191, 118), (176, 186, 192), (28, 33, 30)),
-        speed=MOVE_SPEED * 0.92,
-        max_health=MAX_HEALTH + 90,
-        story="Монах-кузнец, говорящий через перчатки и сейсмический ритм.",
-    ),
-    "mira": FighterDefinition(
-        key="mira",
-        name="Мира Сол",
-        title="Штормовая танцовщица",
-        palette=((79, 150, 214), (238, 241, 244), (26, 31, 45)),
-        speed=MOVE_SPEED * 1.02,
-        story="Изгнанная певица погоды, ищущая источник чёрной авроры.",
-    ),
-    "lin": FighterDefinition(
-        key="lin",
-        name="Линь Шао",
-        title="Кулак дракона",
-        palette=((188, 94, 68), (242, 202, 132), (26, 26, 34)),
-        speed=MOVE_SPEED * 1.03,
-        story="Боец из храмового квартала, который учится у ветра и камня.",
-    ),
-    "ryu": FighterDefinition(
-        key="ryu",
-        name="Рю Тэн",
-        title="Тень горы",
-        palette=((116, 116, 154), (238, 241, 244), (20, 24, 34)),
-        speed=MOVE_SPEED * 0.96,
-        max_health=MAX_HEALTH + 60,
-        story="Скрытный мастер, чьи удары звучат как гром среди пиков.",
-    ),
-}
+FIGHTER_DEFINITIONS = _CONTENT.fighters
 
 
 class Fighter:

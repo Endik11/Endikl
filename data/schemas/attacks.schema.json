@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "60 FPS frame attacks",
+  "type": "object",
+  "required": ["data_version", "simulation_fps", "attacks"],
+  "properties": {
+    "data_version": {"const": 2},
+    "simulation_fps": {"const": 60},
+    "attacks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "owner_id", "startup_frames", "active_frames", "recovery_frames", "hit_stun_frames", "block_stun_frames", "cancel_start_frame", "cancel_end_frame", "hit_stop_frames", "block_stop_frames", "movement", "hitboxes_by_frame", "hurtbox_overrides_by_frame", "invulnerability_frames", "armor_frames", "projectile_definition", "multi_hit_interval_frames"],
+        "properties": {
+          "startup_frames": {"type": "integer", "minimum": 0},
+          "active_frames": {"type": "integer", "minimum": 1},
+          "recovery_frames": {"type": "integer", "minimum": 0},
+          "hit_stop_frames": {"type": "integer", "minimum": 0},
+          "block_stop_frames": {"type": "integer", "minimum": 0},
+          "movement": {"type": "object", "required": ["x_per_frame", "y_per_frame"]},
+          "hitboxes_by_frame": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "object", "required": ["x", "y", "width", "height", "hit_id", "priority"]}}},
+          "hurtbox_overrides_by_frame": {"type": "object"},
+          "invulnerability_frames": {"type": "array"},
+          "armor_frames": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+          "multi_hit_interval_frames": {"type": "integer", "minimum": 1},
+          "projectile_definition": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "type": "object",
+                "required": ["projectile_id", "spawn_frame", "offset_x", "offset_y", "velocity_x", "velocity_y", "acceleration_x", "acceleration_y", "lifetime_frames", "width", "height", "damage", "chip_damage", "hit_level", "hit_stun_frames", "block_stun_frames", "priority", "durability", "multi_hit", "multi_hit_interval_frames", "destroy_on_hit", "destroy_on_block", "destroy_outside_arena", "properties"],
+                "properties": {
+                  "spawn_frame": {"type": "integer", "minimum": 0},
+                  "lifetime_frames": {"type": "integer", "minimum": 1},
+                  "width": {"type": "number", "exclusiveMinimum": 0},
+                  "height": {"type": "number", "exclusiveMinimum": 0},
+                  "damage": {"type": "integer", "minimum": 0},
+                  "chip_damage": {"type": "integer", "minimum": 0},
+                  "priority": {"type": "integer", "minimum": 0},
+                  "durability": {"type": "integer", "minimum": 1},
+                  "multi_hit_interval_frames": {"type": "integer", "minimum": 1},
+                  "hit_level": {"enum": ["high", "mid", "low", "overhead", "unblockable"]}
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
