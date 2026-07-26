@@ -5,7 +5,8 @@ import pygame
 from .audio_manager import AudioManager
 from .combat_match_runtime import CombatMatchRuntime
 from .content_registry import get_default_registry
-from .debug import configure_logging, log_critical, log_event, log_runtime_info, shutdown_logging
+from .debug import RECENT_LOGS, configure_logging, log_critical, log_event, log_runtime_info, shutdown_logging
+from .crash_context import CrashContext
 from .display_manager import DisplayManager
 from .enums import GameState, MatchMode
 from .input_manager import InputManager
@@ -249,6 +250,15 @@ class GameEngine:
                     self.display.present()
         except Exception as exc:
             log_critical(f"Fatal game loop error state={self.state.name}", exc)
+            exc.crash_context = CrashContext(
+                game_state=self.state.name,
+                mode=getattr(self.session.selected_mode, "name", "unknown"),
+                fighters=[value for value in (self.session.player_one_fighter, self.session.player_two_fighter) if value],
+                arena=self.session.selected_arena or "unknown",
+                fallback_content=self.content.using_fallback,
+                accessibility=vars(self.settings.accessibility),
+                recent_log=list(RECENT_LOGS),
+            )
             raise
         finally:
             self.settings_manager.settings = self.settings

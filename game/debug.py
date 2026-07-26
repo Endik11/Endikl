@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import platform
+from collections import deque
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -14,6 +15,15 @@ from .version import VERSION
 LOG_PATH = get_user_data_manager().paths.logs / "game.log"
 LOGGER_NAME = "mortal_end"
 GAME_VERSION = VERSION
+RECENT_LOGS: deque[str] = deque(maxlen=20)
+
+
+def _remember(level: str, message: str, args: tuple[object, ...]) -> None:
+    try:
+        rendered = message % args if args else message
+    except (TypeError, ValueError):
+        rendered = message
+    RECENT_LOGS.append(f"{level}: {rendered}")
 
 
 class WindowsSafeRotatingFileHandler(RotatingFileHandler):
@@ -75,18 +85,22 @@ def log_runtime_info(
 
 
 def log_debug(message: str, *args: object) -> None:
+    _remember("DEBUG", message, args)
     get_logger().debug(message, *args)
 
 
 def log_event(message: str, *args: object) -> None:
+    _remember("INFO", message, args)
     get_logger().info(message, *args)
 
 
 def log_warning(message: str, *args: object) -> None:
+    _remember("WARNING", message, args)
     get_logger().warning(message, *args)
 
 
 def log_error(message: str, exc: BaseException | None = None) -> None:
+    _remember("ERROR", message, ())
     logger = get_logger()
     if exc is None:
         logger.error(message)
@@ -95,6 +109,7 @@ def log_error(message: str, exc: BaseException | None = None) -> None:
 
 
 def log_critical(message: str, exc: BaseException) -> None:
+    _remember("CRITICAL", message, ())
     get_logger().critical(
         message,
         exc_info=(type(exc), exc, exc.__traceback__),

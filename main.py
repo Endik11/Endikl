@@ -6,7 +6,7 @@ def main() -> None:
     try:
         GameEngine().run()
     except Exception as exc:
-        handle_unhandled_exception(exc)
+        handle_unhandled_exception(exc, getattr(exc, "crash_context", None))
         raise SystemExit(1) from None
 
 

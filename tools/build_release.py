@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -24,6 +25,23 @@ def git_commit() -> str:
         return "unknown"
 
 
+def collected_test_count() -> int:
+    try:
+        output = subprocess.check_output([sys.executable, "-m", "pytest", "--collect-only", "-q"], cwd=ROOT, text=True)
+        match = re.search(r"(\d+) tests? collected", output)
+        return int(match.group(1)) if match else 0
+    except (OSError, subprocess.CalledProcessError):
+        return 0
+
+
+def write_windows_version_info() -> None:
+    numbers = [int(part) for part in VERSION.split(".")]
+    numbers.extend([0] * (4 - len(numbers)))
+    numeric = ", ".join(str(part) for part in numbers[:4])
+    text = f"""VSVersionInfo(ffi=FixedFileInfo(filevers=({numeric}), prodvers=({numeric}), mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)), kids=[StringFileInfo([StringTable('040904B0', [StringStruct('FileDescription', 'Shadow Realm: Arena'), StringStruct('ProductName', 'Shadow Realm: Arena'), StringStruct('ProductVersion', '{VERSION}'), StringStruct('FileVersion', '{VERSION}'), StringStruct('CompanyName', 'Endik11'), StringStruct('OriginalFilename', 'ShadowRealmArena.exe'), StringStruct('Copyright', 'Copyright (c) 2026 Endik11')])]), VarFileInfo([VarStruct('Translation', [1033, 1200])])])\n"""
+    (ROOT / "build_version_info.txt").write_text(text, encoding="utf-8")
+
+
 def build_manifest(test_count: int = 0) -> dict[str, object]:
     defaults = json.loads((ROOT / "data/defaults.json").read_text(encoding="utf-8"))
     return {
@@ -43,8 +61,9 @@ def build_manifest(test_count: int = 0) -> dict[str, object]:
 
 
 def main() -> None:
-    manifest = build_manifest()
+    manifest = build_manifest(collected_test_count())
     (ROOT / "release_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    write_windows_version_info()
     subprocess.run([sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "Endikl.spec"], cwd=ROOT, check=True)
     name = f"ShadowRealmArena-{VERSION}-windows-x64"
     archive = shutil.make_archive(str(ROOT / "dist" / name), "zip", ROOT / "dist", name)

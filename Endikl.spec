@@ -10,5 +10,5 @@ datas = data_files + [(str(root / item), ".") for item in docs]
 
 a = Analysis([str(root / "main.py")], pathex=[str(root)], binaries=[], datas=datas, hiddenimports=[], hookspath=[], hooksconfig={}, runtime_hooks=[], excludes=["pytest"], noarchive=False)
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name=name, debug=False, bootloader_ignore_signals=False, strip=False, upx=True, console=True)
+exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name=name, debug=False, bootloader_ignore_signals=False, strip=False, upx=True, console=True, contents_directory=".", version=str(root / "build_version_info.txt"))
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=True, upx_exclude=[], name=name)
