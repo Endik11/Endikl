@@ -60,9 +60,9 @@ class PauseScreen(BaseScreen):
         font = self.fonts["menu"] if self.fonts else pygame.font.Font(None, 32)
         small = self.fonts["small"] if self.fonts else pygame.font.Font(None, 22)
         panel = pygame.Rect(430, 150, 420, 380)
-        overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 115))
-        surface.blit(overlay, (0, 0))
+        overlay=getattr(self,"_overlay",None)
+        if overlay is None or overlay.get_size()!=surface.get_size():overlay=pygame.Surface(surface.get_size(),pygame.SRCALPHA);self._overlay=overlay
+        overlay.fill((0, 0, 0, 115));surface.blit(overlay, (0, 0))
         pygame.draw.rect(surface, (26, 30, 36), panel, border_radius=8)
         pygame.draw.rect(surface, (232, 181, 82), panel, 2, border_radius=8)
         for index, option in enumerate(self.options):

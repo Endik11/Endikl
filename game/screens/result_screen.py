@@ -44,9 +44,9 @@ class ResultScreen(BaseScreen):
         font = self.fonts["menu"] if self.fonts else pygame.font.Font(None, 32)
         small = self.fonts["small"] if self.fonts else pygame.font.Font(None, 22)
         panel = pygame.Rect(420, 156, 440, 350)
-        overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 105))
-        surface.blit(overlay, (0, 0))
+        overlay=getattr(self,"_overlay",None)
+        if overlay is None or overlay.get_size()!=surface.get_size():overlay=pygame.Surface(surface.get_size(),pygame.SRCALPHA);self._overlay=overlay
+        overlay.fill((0, 0, 0, 105));surface.blit(overlay, (0, 0))
         pygame.draw.rect(surface, (26, 30, 36), panel, border_radius=8)
         pygame.draw.rect(surface, (232, 181, 82), panel, 2, border_radius=8)
         surface.blit(font.render(str(result.get("result", "Result")), True, (238, 241, 244)), (462, 192))
