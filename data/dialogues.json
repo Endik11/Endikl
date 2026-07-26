@@ -1,0 +1,1 @@
+{"dialogues":[{"id":"ren_intro","speaker_key":"fighter.ren_kaido.name","text_key":"story.ren.intro"},{"id":"kael_intro","speaker_key":"fighter.kael.name","text_key":"story.kael.intro"},{"id":"fallback_intro","speaker_key":"story.narrator","text_key":"story.fallback.intro"}]}

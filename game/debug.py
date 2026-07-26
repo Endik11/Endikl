@@ -2,16 +2,40 @@ from __future__ import annotations
 
 import logging
 import platform
+from collections import deque
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import pygame
 
+from .user_data_manager import get_user_data_manager
+from .version import VERSION
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-LOG_PATH = ROOT_DIR / "saves" / "game.log"
+
+LOG_PATH = get_user_data_manager().paths.logs / "game.log"
 LOGGER_NAME = "mortal_end"
-GAME_VERSION = "0.1.0-stage1"
+GAME_VERSION = VERSION
+RECENT_LOGS: deque[str] = deque(maxlen=20)
+
+
+def _remember(level: str, message: str, args: tuple[object, ...]) -> None:
+    try:
+        rendered = message % args if args else message
+    except (TypeError, ValueError):
+        rendered = message
+    RECENT_LOGS.append(f"{level}: {rendered}")
+
+
+class WindowsSafeRotatingFileHandler(RotatingFileHandler):
+    """Keep logging when another Windows process briefly owns the log file."""
+
+    def doRollover(self) -> None:
+        try:
+            super().doRollover()
+        except PermissionError:
+            if self.stream:
+                self.stream.close()
+            self.stream = self._open()
 
 
 def configure_logging(debug: bool = False, log_path: Path = LOG_PATH) -> logging.Logger:
@@ -28,7 +52,7 @@ def configure_logging(debug: bool = False, log_path: Path = LOG_PATH) -> logging
     )
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        handler: logging.Handler = RotatingFileHandler(
+        handler: logging.Handler = WindowsSafeRotatingFileHandler(
             log_path,
             maxBytes=1_000_000,
             backupCount=3,
@@ -61,18 +85,22 @@ def log_runtime_info(
 
 
 def log_debug(message: str, *args: object) -> None:
+    _remember("DEBUG", message, args)
     get_logger().debug(message, *args)
 
 
 def log_event(message: str, *args: object) -> None:
+    _remember("INFO", message, args)
     get_logger().info(message, *args)
 
 
 def log_warning(message: str, *args: object) -> None:
+    _remember("WARNING", message, args)
     get_logger().warning(message, *args)
 
 
 def log_error(message: str, exc: BaseException | None = None) -> None:
+    _remember("ERROR", message, ())
     logger = get_logger()
     if exc is None:
         logger.error(message)
@@ -81,6 +109,7 @@ def log_error(message: str, exc: BaseException | None = None) -> None:
 
 
 def log_critical(message: str, exc: BaseException) -> None:
+    _remember("CRITICAL", message, ())
     get_logger().critical(
         message,
         exc_info=(type(exc), exc, exc.__traceback__),

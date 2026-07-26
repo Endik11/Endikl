@@ -10,7 +10,7 @@ from .settings import SAVE_DIR
 
 
 SAVE_FILE = SAVE_DIR / "profile.json"
-SAVE_VERSION = 2
+SAVE_VERSION = 4
 LEGACY_FIGHTER_ID = "ryu"
 ORIGINAL_FIGHTER_ID = "ren_kaido"
 
@@ -46,6 +46,17 @@ class ProfileData:
     arcade_progress: dict[str, object] = field(default_factory=dict)
     story_progress: dict[str, object] = field(default_factory=dict)
     tournament_progress: dict[str, object] = field(default_factory=dict)
+    training_preferences: dict[str, object] = field(default_factory=dict)
+    statistics: dict[str, object] = field(default_factory=dict)
+    processed_result_ids: list[str] = field(default_factory=list)
+    received_reward_ids: list[str] = field(default_factory=list)
+    economy_transactions: list[str] = field(default_factory=list)
+    achievement_progress: dict[str, dict[str, object]] = field(default_factory=dict)
+    unlocked_achievements: list[str] = field(default_factory=list)
+    processed_achievement_events: list[str] = field(default_factory=list)
+    display_name: str = "Player"
+    selected_emblem: str = ""
+    profile_frame: str = ""
     record: MatchRecord = field(default_factory=MatchRecord)
 
 
@@ -60,12 +71,20 @@ class SaveManager:
         self.profile = ProfileData()
         self.fighter_keys = fighter_keys
         self.arena_keys = arena_keys
+        self.read_only_newer = False
 
     def load(self) -> ProfileData:
         data = read_json_object(self.path, "profile")
         if data is None:
+            if self.path.exists():
+                try: shutil.copy2(self.path, self.path.with_suffix(self.path.suffix + ".corrupt.bak"))
+                except OSError as exc: log_warning("Could not preserve corrupt profile: %s", exc)
             self.save()
             return self.profile
+        source_version = _non_negative_int(data.get("version"))
+        if source_version > SAVE_VERSION:
+            self.read_only_newer = True
+            log_warning("Profile version %s is newer than supported %s; using safe read-only view", source_version, SAVE_VERSION)
         data, migrated = migrate_profile_data(data)
         if migrated:
             self._backup_before_migration()
@@ -119,9 +138,20 @@ class SaveManager:
             arcade_progress=_object(data.get("arcade_progress")),
             story_progress=_object(data.get("story_progress")),
             tournament_progress=_object(data.get("tournament_progress")),
+            training_preferences=_object(data.get("training_preferences")),
+            statistics=_object(data.get("statistics")),
+            processed_result_ids=_string_list(data.get("processed_result_ids"), []),
+            received_reward_ids=_string_list(data.get("received_reward_ids"), []),
+            economy_transactions=_string_list(data.get("economy_transactions"), []),
+            achievement_progress=_object_mapping(data.get("achievement_progress")),
+            unlocked_achievements=_string_list(data.get("unlocked_achievements"), []),
+            processed_achievement_events=_string_list(data.get("processed_achievement_events"), []),
+            display_name=str(data.get("display_name","Player"))[:32] if isinstance(data.get("display_name","Player"),str) else "Player",
+            selected_emblem=str(data.get("selected_emblem","")) if isinstance(data.get("selected_emblem",""),str) else "",
+            profile_frame=str(data.get("profile_frame","")) if isinstance(data.get("profile_frame",""),str) else "",
             record=record,
         )
-        if migrated or data.get("version") != SAVE_VERSION:
+        if (migrated or data.get("version") != SAVE_VERSION) and not self.read_only_newer:
             log_warning(
                 "Profile data migrated from version %r to %s",
                 data.get("version"),
@@ -139,8 +169,15 @@ class SaveManager:
         except OSError as exc:
             log_warning("Could not create pre-migration backup %s: %s", backup, exc)
 
-    def save(self) -> None:
-        write_json_atomic(self.path, asdict(self.profile), "profile")
+    def save(self) -> bool:
+        if self.read_only_newer:
+            log_warning("Profile save skipped to preserve newer-format data")
+            return False
+        backup=self.path.with_suffix(self.path.suffix+".bak")
+        if self.path.is_file():
+            try:shutil.copy2(self.path,backup)
+            except OSError as exc:log_warning("Could not update profile backup: %s",exc)
+        return write_json_atomic(self.path, asdict(self.profile), "profile")
 
     def record_win(self, finisher: str | None, perfect: bool) -> None:
         self.profile.record.wins += 1

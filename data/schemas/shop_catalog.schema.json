@@ -1,0 +1,1 @@
+{"type":"object","required":["items"],"properties":{"items":{"type":"array","items":{"type":"object","required":["id","name_key","description_key","category","price","preview","unlock_requirements","default_availability","hidden","tags"]}}}}

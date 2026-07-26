@@ -4,3 +4,7 @@ __pycache__/
 *.py[cod]
 saves/
 fighter_preview.png
+build/
+dist/
+release_manifest.json
+build_version_info.txt

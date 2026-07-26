@@ -1,8 +1,13 @@
 from game.engine import GameEngine
+from game.crash_reporter import handle_unhandled_exception
 
 
 def main() -> None:
-    GameEngine().run()
+    try:
+        GameEngine().run()
+    except Exception as exc:
+        handle_unhandled_exception(exc, getattr(exc, "crash_context", None))
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":

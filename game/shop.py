@@ -7,6 +7,10 @@ import pygame
 from .debug import log_error, log_event
 from .menu import draw_background, draw_text
 from .settings import COLORS, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
+from pathlib import Path
+import json
+from .economy import Catalog, EconomyManager, Wallet
+from .platform_paths import data_path
 
 
 @dataclass(frozen=True)
@@ -106,6 +110,20 @@ def build_shop_catalog() -> list[ShopItem]:
     ]
 
 
+_compatibility_shop_catalog = build_shop_catalog
+
+
+def build_shop_catalog() -> list[ShopItem]:
+    catalog = Catalog.load(data_path("shop_catalog.json"))
+    strings = json.loads(data_path("localization_ru.json").read_text(encoding="utf-8"))["strings"]
+    items = []
+    legacy_categories = {"palettes":"color","emblems":"misc","trails":"hit_effect","profile_frames":"theme","arena_variants":"arena","gallery_entries":"misc"}
+    for item in catalog.items.values():
+        color = tuple(item.preview.get("color") or item.preview.get("colors") or (79, 150, 214))
+        items.append(ShopItem(item.id, strings.get(item.name_key, item.name_key), legacy_categories[item.category], "cosmetic", strings.get(item.description_key, item.description_key), item.price, str(item.preview), color))
+    return items
+
+
 class ShopScreen:
     def __init__(self) -> None:
         self.items = build_shop_catalog()
@@ -123,6 +141,8 @@ class ShopScreen:
             ("theme", "Темы"),
             ("misc", "Предметы"),
         ]
+
+        self.categories = [(category, category.replace("_", " ").title()) for category in sorted({item.category for item in self.items})]
 
     @property
     def category(self) -> str:
@@ -218,6 +238,35 @@ class ShopScreen:
                 self.message = "Ошибка покупки"
         else:
             self.message = f"Нужно ещё {item.cost - profile.currency} монет"
+
+    def _handle_action(self, profile, save_manager) -> None:
+        items = self.current_items()
+        if not items:
+            return
+        item = items[self.selected_index]
+        if item.id in profile.purchased_items:
+            save_manager.equip_item(item.category, item.id)
+            self.message = "Equipped"
+            return
+        catalog = Catalog.load(data_path("shop_catalog.json"))
+        transactions = set(getattr(profile, "economy_transactions", []))
+        unlocks = set(profile.unlocked_fighters) | set(profile.unlocked_arenas) | set(getattr(profile, "received_reward_ids", []))
+        economy = EconomyManager(Wallet(profile.currency), catalog, profile.purchased_items, transactions, unlocks=unlocks)
+        result = economy.purchase(item.id, f"shop:{item.id}")
+        if not result.success:
+            self.message = result.code
+            return
+        before = (profile.currency, list(profile.purchased_items), list(getattr(profile, "economy_transactions", [])))
+        profile.currency = economy.wallet.points
+        profile.purchased_items = sorted(economy.inventory)
+        profile.economy_transactions = sorted(economy.transactions)
+        try:
+            save_manager.save()
+            self.message = "Purchased"
+        except Exception as exc:
+            profile.currency, profile.purchased_items, profile.economy_transactions = before
+            log_error("Failed to persist shop transaction", exc)
+            self.message = "Purchase failed"
 
     def _handle_mouse_click(self, pos: tuple[int, int], profile, save_manager) -> None:
         items = self.current_items()

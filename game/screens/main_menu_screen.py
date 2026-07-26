@@ -20,6 +20,7 @@ class MainMenuScreen(BaseScreen):
             MenuItem("Магазин", "shop"),
             MenuItem("Коллекция", "collection"),
             MenuItem("Статистика", "stats"),
+            MenuItem("Профиль", "profile"),
             MenuItem("Настройки", "settings"),
             MenuItem("Выход", "quit"),
         ]
@@ -73,6 +74,7 @@ class MainMenuScreen(BaseScreen):
             "shop": GameState.SHOP,
             "collection": GameState.COLLECTION,
             "stats": GameState.STATS,
+            "profile": GameState.PROFILE,
             "arena": GameState.ARENA_SELECT,
         }
         if action == "quit":
@@ -81,6 +83,10 @@ class MainMenuScreen(BaseScreen):
         if action == "arena" and not self.context.session.fighters_selected:
             action = "vs"
         if action in {"story", "arcade", "tournament", "vs", "training"}:
+            if action == "story":
+                self.context.state_manager.request_change(GameState.MODE_SELECT)
+                self.context.audio.play_ui()
+                return
             self.context.session.selected_mode = parse_match_mode(action)
             self.context.state_manager.request_change(GameState.CHARACTER_SELECT)
             self.context.audio.play_ui()

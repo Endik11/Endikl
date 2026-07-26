@@ -5,9 +5,10 @@ import pygame
 from .audio_manager import AudioManager
 from .combat_match_runtime import CombatMatchRuntime
 from .content_registry import get_default_registry
-from .debug import configure_logging, log_critical, log_event, log_runtime_info, shutdown_logging
+from .debug import RECENT_LOGS, configure_logging, log_critical, log_event, log_runtime_info, shutdown_logging
+from .crash_context import CrashContext
 from .display_manager import DisplayManager
-from .enums import GameState
+from .enums import GameState, MatchMode
 from .input_manager import InputManager
 from .resources import inspect_optional_assets
 from .save import SaveManager
@@ -22,15 +23,41 @@ from .screens.result_screen import ResultScreen
 from .screens.settings_screen import SettingsScreen
 from .screens.shop_screen import ShopScreen
 from .screens.stats_screen import StatsScreen
+from .screens.profile_screen import ProfileScreen
+from .screens.credits_screen import CreditsScreen
+from .screens.controls_screen import ControlsScreen
+from .screens.mode_select_screen import ModeSelectScreen
+from .screens.arcade_ladder_screen import ArcadeLadderScreen
+from .screens.story_select_screen import StorySelectScreen
+from .screens.story_screen import StoryScreen
+from .screens.dialogue_screen import DialogueScreen
+from .screens.tournament_screen import TournamentScreen
+from .screens.tournament_bracket_screen import TournamentBracketScreen
+from .screens.training_settings_screen import TrainingSettingsScreen
+from .statistics_manager import StatisticsManager
+from .reward_manager import RewardManager
+from .match_statistics import MatchStatistics
+from .progress_manager import ProgressManager
+from .achievements import AchievementRegistry, AchievementManager
+from pathlib import Path
+from .modes.arcade_session import ArcadeSession
+from .modes.story_session import StorySession
+from .modes.tournament_session import TournamentSession
+from .modes.training_session import TrainingSession
 from .session import GameSession
 from .settings import GAME_TITLE, SettingsManager
 from .state_manager import StateManager
+from .platform_paths import data_path
+from .user_data_manager import get_user_data_manager
 
 
 class GameEngine:
     """Composition root; combat rules live exclusively in CombatWorld/runtime."""
 
     def __init__(self) -> None:
+        user_data = get_user_data_manager()
+        user_data.ensure()
+        user_data.migrate_legacy_saves()
         configure_logging()
         pygame.init()
         pygame.display.set_caption(GAME_TITLE)
@@ -42,6 +69,11 @@ class GameEngine:
             arena_keys=set(self.content.arenas),
         )
         self.profile = self.save_manager.load()
+        self.statistics = StatisticsManager(self.profile.statistics, self.profile.processed_result_ids)
+        self.rewards = RewardManager(self.profile.received_reward_ids, self.profile.processed_result_ids)
+        self.progress = ProgressManager(self.profile)
+        self.achievement_registry = AchievementRegistry.load(data_path("achievements.json"))
+        self.achievements = AchievementManager(self.achievement_registry, getattr(self.profile, "achievement_progress", {}), getattr(self.profile, "unlocked_achievements", []), getattr(self.profile, "processed_achievement_events", []))
         self._repair_profile_content_ids()
         self.display = DisplayManager(self.settings)
         self.screen = self.display.create_display()
@@ -90,8 +122,54 @@ class GameEngine:
         self.running = False
 
     def _on_match_result(self) -> None:
+        result = self.session.last_match_result or {}
+        result_id = result.get("result_id")
+        if result_id:
+            outcome = "win" if result.get("result") == "PLAYER_1" else "loss" if result.get("result") == "PLAYER_2" else "draw"
+            stats = MatchStatistics.from_events(result_id, self.session.player_one_fighter or "", self.session.player_two_fighter or "", self.session.selected_arena or "", outcome, result.get("events", ()))
+            self.statistics.process(stats)
+            self._advance_mode_result(result_id, outcome == "win")
+            self.achievements.evaluate(result_id, self.statistics.data, lambda reward_id, points: self.rewards.grant(reward_id, f"{result_id}:{reward_id}", self.profile, "currency", points))
+            achievement_data = self.achievements.to_dict()
+            self.profile.achievement_progress = achievement_data["progress"]
+            self.profile.unlocked_achievements = achievement_data["unlocked"]
+            self.profile.processed_achievement_events = achievement_data["processed_events"]
+            self.profile.statistics = dict(self.statistics.data)
+            self.profile.processed_result_ids = sorted(self.statistics.processed_result_ids | self.rewards.processed_result_ids)
+            self.profile.received_reward_ids = sorted(self.rewards.received_reward_ids)
+            self.save_manager.save()
         if self.state is GameState.FIGHT and not self.state_manager.has_pending_change:
             self.state_manager.request_change(GameState.RESULT)
+
+    def _advance_mode_result(self, result_id: str, won: bool) -> None:
+        mode = self.session.selected_mode
+        active = self.session.mode_session
+        if mode is MatchMode.ARCADE and isinstance(active, ArcadeSession):
+            if active.record_result(result_id, won):
+                self.progress.store_arcade(active)
+                if active.completed:
+                    self.rewards.grant("arcade_complete", result_id, self.profile, "currency", 500)
+                    self.statistics.mode_complete("arcade")
+                elif won:
+                    self.session.player_two_fighter = active.current_opponent
+                    self.session.match_options["difficulty"] = active.current_difficulty
+        elif mode is MatchMode.TOURNAMENT and isinstance(active, TournamentSession):
+            match = next((item for item in active.matches if not item.winner and self.session.player_one_fighter in {item.fighter_one, item.fighter_two}), None)
+            if match is not None:
+                winner = self.session.player_one_fighter if won else self.session.player_two_fighter
+                active.record_result(match.id, result_id, winner)
+                self.progress.store_tournament(active)
+                if active.completed and active.champion == active.player_id:
+                    self.rewards.grant("tournament_win", result_id, self.profile, "currency", 400)
+                    self.statistics.mode_complete("tournament")
+        elif mode is MatchMode.STORY and isinstance(active, StorySession):
+            from pathlib import Path
+            from .modes.story_runner import StoryRegistry
+            stories = StoryRegistry(data_path()); stories.load(set(self.content.fighters)); story = stories.stories[active.story_id]
+            if active.node(story).type == "battle" and active.record_battle(story, result_id, won):
+                self.progress.store_story(active)
+        elif mode is MatchMode.TRAINING and isinstance(active, TrainingSession):
+            self.progress.store_training(active)
 
     def _repair_profile_content_ids(self) -> None:
         fighters = list(self.content.fighters)
@@ -106,6 +184,20 @@ class GameEngine:
     def _register_screens(self) -> None:
         screens = {
             GameState.MAIN_MENU: MainMenuScreen(self.screen_context),
+            GameState.MODE_SELECT: ModeSelectScreen(self.screen_context),
+            GameState.ARCADE_SELECT: ArcadeLadderScreen(self.screen_context),
+            GameState.ARCADE_LADDER: ArcadeLadderScreen(self.screen_context),
+            GameState.STORY_SELECT: StorySelectScreen(self.screen_context),
+            GameState.STORY_DIALOGUE: DialogueScreen(self.screen_context),
+            GameState.STORY_PROGRESS: StoryScreen(self.screen_context),
+            GameState.TOURNAMENT_SETUP: TournamentScreen(self.screen_context),
+            GameState.TOURNAMENT_BRACKET: TournamentBracketScreen(self.screen_context),
+            GameState.TRAINING_SETUP: TrainingSettingsScreen(self.screen_context),
+            GameState.TRAINING: FightScreen(self.screen_context),
+            GameState.MODE_RESULT: ResultScreen(self.screen_context),
+            GameState.PROFILE: ProfileScreen(context=self.screen_context),
+            GameState.CREDITS: CreditsScreen(context=self.screen_context),
+            GameState.CONTROLS: ControlsScreen(context=self.screen_context),
             GameState.SETTINGS: SettingsScreen(context=self.screen_context),
             GameState.CHARACTER_SELECT: CharacterSelectScreen(context=self.screen_context),
             GameState.ARENA_SELECT: ArenaSelectScreen(self.profile.selected_arena, context=self.screen_context),
@@ -135,6 +227,8 @@ class GameEngine:
             while self.running:
                 dt = min(self.clock.tick(self.settings.video.fps_limit) / 1000.0, 0.25)
                 _, _, quit_requested, events = self.input.poll()
+                if self.input.consume_controller_disconnect() and self.state is GameState.FIGHT and not self.state_manager.has_pending_change:
+                    self.match_runtime.pause_match();self.state_manager.request_change(GameState.PAUSE)
                 if quit_requested:
                     self.running = False
                 for event in events:
@@ -156,6 +250,15 @@ class GameEngine:
                     self.display.present()
         except Exception as exc:
             log_critical(f"Fatal game loop error state={self.state.name}", exc)
+            exc.crash_context = CrashContext(
+                game_state=self.state.name,
+                mode=getattr(self.session.selected_mode, "name", "unknown"),
+                fighters=[value for value in (self.session.player_one_fighter, self.session.player_two_fighter) if value],
+                arena=self.session.selected_arena or "unknown",
+                fallback_content=self.content.using_fallback,
+                accessibility=vars(self.settings.accessibility),
+                recent_log=list(RECENT_LOGS),
+            )
             raise
         finally:
             self.settings_manager.settings = self.settings

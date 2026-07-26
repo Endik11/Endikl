@@ -214,3 +214,50 @@ data, input history, damage state and deterministic match state respectively.
 Legacy `game/fighter.py` and `game/combos.py` remain for compatibility tools,
 but production constructs only `CombatFighter` and registry-backed commands.
 The obsolete `CallbackMatchRuntime` class has been removed.
+
+## Game modes and AI
+
+Every simulation frame is supplied by a controller. `HumanController` adapts the
+input manager, `AIController` reads only the current immutable `CombatSnapshot`
+and bounded `AIMemory`, and `TrainingDummyController` emits scripted or recorded
+`InputFrame` values. All controllers feed the same `CombatWorld`; none can alter
+fighters, damage, state, projectiles, or rendering directly. AI randomness is a
+private seeded generator and difficulty changes reaction, decisions, errors,
+defense judgement, combos and adaptation, never combat statistics.
+
+`GameSession.controller_types` records participant ownership and its
+`mode_session` references serializable mode state. `ArcadeSession` owns a seeded
+ladder, continues and escalating difficulty. `StorySession` and `StoryRegistry`
+run validated data-driven nodes. `TournamentSession` owns a 4/8 entrant bracket
+with stable match IDs. `TrainingSession` owns preferences and metrics while its
+reset service deliberately resets the existing world without recreating the
+renderer.
+
+Mode screens request typed `GameState` transitions through `StateManager`, then
+write fighter/controller choices into `GameSession`; only Arena Select starts
+`CombatMatchRuntime`. The runtime emits a stable result ID and accumulated
+combat events. `StatisticsManager` consumes those events, `RewardManager`
+applies unlocks or currency, and both reject processed IDs. `ProgressManager`
+serializes independent Arcade, Story, Tournament and Training state through the
+atomic, migrated profile save.
+
+## UX, accessibility and progression
+
+`game/ui` owns shared widget state, focus, semantic navigation, modal focus
+trapping, scrolling, tooltips and bounded toast queues in virtual coordinates.
+Disabled or hidden widgets are skipped and focus is remembered per screen.
+`UITheme.accessible` applies high contrast, large text and reduced transition
+motion; combat camera and screen effects retain reduced-motion/flash paths.
+
+`game/controls` owns validated keyboard, gamepad-button and axis profiles.
+Rebinding classifies conflicts and atomically swaps bindings only when required
+actions remain present. Device removal is surfaced by `InputManager`; the engine
+pauses an active match without destroying its `CombatWorld`. Rumble is optional
+and failure-safe.
+
+RU and EN catalogs share keys and placeholders with RU fallback. The cosmetic
+economy validates catalog requirements and rolls wallet/inventory back around a
+failed save. Achievements consume event-derived statistics and issue unique
+rewards once. Profile format 4 separates progress, statistics, economy,
+achievements and cosmetics; atomic writes maintain backups, corrupt inputs are
+preserved and newer profile versions are opened read-only.

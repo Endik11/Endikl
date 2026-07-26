@@ -1,0 +1,1 @@
+{"type":"object","required":["achievements"],"properties":{"achievements":{"type":"array","items":{"type":"object","required":["id","name_key","description_key","stat_key","target","reward_id","reward_points","hidden"]}}}}
