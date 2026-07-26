@@ -10,6 +10,8 @@ datas = data_files + [(str(root / item), ".") for item in docs]
 key_art = root / "assets" / "ui" / "shadow_realm_keyart.png"
 if key_art.exists():
     datas.append((str(key_art), "assets/ui"))
+for fighter_render in (root / "assets" / "fighters").glob("*_render.png"):
+    datas.append((str(fighter_render), "assets/fighters"))
 
 a = Analysis([str(root / "main.py")], pathex=[str(root)], binaries=[], datas=datas, hiddenimports=[], hookspath=[], hooksconfig={}, runtime_hooks=[], excludes=["pytest"], noarchive=False)
 pyz = PYZ(a.pure)

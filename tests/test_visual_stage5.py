@@ -18,6 +18,7 @@ from game.visual.animation_graph import AnimationGraph
 from game.visual.animation_player import AnimationPlayer
 from game.visual.camera_controller import CameraController
 from game.visual.effects_manager import EffectsManager
+from game.visual.fighter_renderer import FighterRenderer
 from game.visual.hud_renderer import HudRenderer
 from game.visual.lighting import LightingRenderer
 from game.visual.particle_system import ParticleSystem
@@ -148,6 +149,22 @@ def test_lighting_overlay_preserves_scene_contrast() -> None:
     LightingRenderer().draw(surface, (255, 255, 255))
     color = surface.get_at((0, 0))
     assert color.r < 80 and color.g < 80 and color.b < 80
+
+
+def test_verified_combat_renders_load_and_draw_over_procedural_fallback() -> None:
+    pygame.init()
+    content = registry()
+    renderer = FighterRenderer(content)
+    kael = renderer._load_combat_render("kael")
+    sable = renderer._load_combat_render("sable")
+    assert kael is not None and sable is not None
+    assert kael.get_flags() & pygame.SRCALPHA
+    assert sable.get_flags() & pygame.SRCALPHA
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    surface.fill((8, 10, 16, 255))
+    world = CombatWorld(content, "kael", "sable", "neon_foundry")
+    renderer.draw(surface, world.snapshot(), CameraController())
+    assert surface.get_at((350, 405)).a > 0
 
 
 def test_combat_renderer_is_headless_and_does_not_mutate_world() -> None:
