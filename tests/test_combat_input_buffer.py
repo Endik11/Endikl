@@ -37,3 +37,32 @@ def test_command_conflict_uses_priority_then_affordable_meter():
         buffer=InputBuffer();buffer.push(InputFrame(light_punch=True,pressed=frozenset({"light_punch"}),frame_number=1));return SimpleNamespace(fighter_id="kael",meter=meter,facing=1,input_buffer=buffer)
     assert FighterController(registry)._matched_combo(fighter(100)).id=="special"
     assert FighterController(registry)._matched_combo(fighter(50)).id=="normal"
+
+def test_long_complete_command_wins_before_short_high_priority_command():
+    from types import SimpleNamespace
+    from game.combat.fighter_controller import FighterController
+    def combo(i,inputs,priority,cost=0):return SimpleNamespace(id=i,enabled=True,owner_id="common",meter_cost=cost,priority=priority,inputs=inputs,resulting_attack_id=i,max_gap_frames=20)
+    registry=SimpleNamespace(combos={
+        "normal":combo("normal",("light_punch",),100),
+        "rune":combo("rune",("down","down_forward","forward","light_punch"),0),
+    })
+    buffer=InputBuffer()
+    buffer.push(InputFrame(down=True,frame_number=1))
+    buffer.push(InputFrame(down=True,right=True,frame_number=2))
+    buffer.push(InputFrame(right=True,light_punch=True,pressed=frozenset({"light_punch"}),frame_number=3))
+    fighter=SimpleNamespace(fighter_id="kael",meter=0,facing=1,input_buffer=buffer)
+    assert FighterController(registry)._matched_combo(fighter).id=="rune"
+
+def test_incomplete_motion_falls_back_to_button_command():
+    from types import SimpleNamespace
+    from game.combat.fighter_controller import FighterController
+    def combo(i,inputs,priority=0):return SimpleNamespace(id=i,enabled=True,owner_id="common",meter_cost=0,priority=priority,inputs=inputs,resulting_attack_id=i,max_gap_frames=20)
+    registry=SimpleNamespace(combos={
+        "normal":combo("normal",("light_punch",),0),
+        "rune":combo("rune",("down","down_forward","forward","light_punch"),0),
+    })
+    buffer=InputBuffer()
+    buffer.push(InputFrame(down=True,frame_number=1))
+    buffer.push(InputFrame(right=True,light_punch=True,pressed=frozenset({"light_punch"}),frame_number=2))
+    fighter=SimpleNamespace(fighter_id="kael",meter=0,facing=1,input_buffer=buffer)
+    assert FighterController(registry)._matched_combo(fighter).id=="normal"

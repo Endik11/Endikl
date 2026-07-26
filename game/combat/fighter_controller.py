@@ -27,7 +27,7 @@ class FighterController:
         else:fighter.state=FighterState.CROUCH if fighter.crouching else FighterState.WALK_FORWARD if direction else FighterState.IDLE
     def _matched_combo(self,fighter):
         aliases={"energy":"special"};valid={"light_punch","heavy_punch","light_kick","heavy_kick","special","throw","block"}
-        combos=sorted((c for c in self.registry.combos.values() if c.enabled and c.meter_cost<=fighter.meter and c.owner_id in {"common",fighter.fighter_id}),key=lambda c:(-c.priority,-c.meter_cost,-len(c.inputs),c.id))
+        combos=sorted((c for c in self.registry.combos.values() if c.enabled and c.meter_cost<=fighter.meter and c.owner_id in {"common",fighter.fighter_id}),key=lambda c:(-len(c.inputs),-c.priority,-c.meter_cost,-self._specificity(c.inputs),c.id))
         for combo in combos:
             tokens=[]
             for raw in combo.inputs:
@@ -35,6 +35,11 @@ class FighterController:
             command={"id":combo.id,"inputs":tokens,"window":combo.max_gap_frames}
             if self.command_parser.match(fighter.input_buffer,command,fighter.facing):return combo
         return None
+    @staticmethod
+    def _specificity(inputs):
+        directions={"down","down_back","down_forward","forward","back","up","neutral"}
+        buttons={"light_punch","heavy_punch","light_kick","heavy_kick","special","throw","block","energy"}
+        return sum(2 if item in directions else 1 if item in buttons else 0 for item in inputs)
     def start_attack(self,world,fighter,legacy_name):
         definition=next((a for a in self.registry.attacks.values() if a.legacy_action_name==legacy_name),None)
         return self._start_definition(fighter,definition,definition.energy_cost*3 if definition else 0)
