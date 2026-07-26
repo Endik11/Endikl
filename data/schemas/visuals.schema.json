@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Visuals","type":"object","required":["rigs","fighters","arenas"],"properties":{"rigs":{"type":"array"},"fighters":{"type":"array"},"arenas":{"type":"array"}}}

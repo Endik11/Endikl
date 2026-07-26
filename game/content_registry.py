@@ -7,7 +7,20 @@ from pathlib import Path
 from .content_errors import ContentError, ContentValidationError, MissingContentReferenceError
 from .data_loader import DataLoader
 from .debug import log_critical, log_error, log_event, log_warning
-from .definitions import ArenaDefinition, AttackDefinition, ComboDefinition, FighterDefinition
+from .definitions import (
+    AnimationDefinition,
+    AnimationKeyframeDefinition,
+    ArenaDefinition,
+    ArenaVisualDefinition,
+    AttackDefinition,
+    BoneDefinition,
+    ComboDefinition,
+    EffectDefinition,
+    FighterDefinition,
+    FighterVisualDefinition,
+    HudDefinition,
+    RigDefinition,
+)
 from .fallback_content import (
     FALLBACK_ARENAS,
     FALLBACK_ATTACKS,
@@ -34,6 +47,12 @@ class ContentRegistry:
         self.attacks: dict[str, AttackDefinition] = {}
         self.combos: dict[str, ComboDefinition] = {}
         self.arenas: dict[str, ArenaDefinition] = {}
+        self.rigs: dict[str, RigDefinition] = {}
+        self.fighter_visuals: dict[str, FighterVisualDefinition] = {}
+        self.arena_visuals: dict[str, ArenaVisualDefinition] = {}
+        self.animations: dict[str, AnimationDefinition] = {}
+        self.effects: dict[str, EffectDefinition] = {}
+        self.hud: HudDefinition | None = None
         self.localization = LocalizationManager()
         self.using_fallback = False
         self.last_error: ContentError | None = None
@@ -52,6 +71,7 @@ class ContentRegistry:
                 FALLBACK_COMBOS,
                 FALLBACK_ARENAS,
                 FALLBACK_LOCALIZATION,
+                None,
                 source="<emergency fallback>",
             )
             self.using_fallback = True
@@ -83,10 +103,25 @@ class ContentRegistry:
             loader.load_records("combos.json", "combos"),
             loader.load_records("arenas.json", "arenas"),
             loader.load_mapping("localization_ru.json", "strings"),
+            self._load_visual_rows(loader),
             source=str(self.data_dir),
         )
 
-    def _build_content(self, fighter_rows, attack_rows, combo_rows, arena_rows, strings, *, source: str):
+    def _load_visual_rows(self, loader: DataLoader):
+        filenames = ("visuals.json", "animations.json", "effects.json", "hud.json")
+        if any(not (loader.data_dir / filename).is_file() for filename in filenames):
+            log_warning("Visual data files are incomplete; using procedural visual fallback from content ids")
+            return None
+        return {
+            "rigs": loader.load_records("visuals.json", "rigs"),
+            "fighters": loader.load_records("visuals.json", "fighters"),
+            "arenas": loader.load_records("visuals.json", "arenas"),
+            "animations": loader.load_records("animations.json", "animations"),
+            "effects": loader.load_records("effects.json", "effects"),
+            "hud": loader.load_records("hud.json", "hud"),
+        }
+
+    def _build_content(self, fighter_rows, attack_rows, combo_rows, arena_rows, strings, visual_rows, *, source: str):
         fighter_values = [self._fighter(row, source) for row in fighter_rows]
         attack_values = [self._attack(row, source) for row in attack_rows]
         combo_values = [self._combo(row, source) for row in combo_rows]
@@ -96,15 +131,23 @@ class ContentRegistry:
         localization = LocalizationManager(strings)
         arena_values = [self._arena(row, localization, source) for row in arena_rows]
         arenas = {item.id: item for item in arena_values}
-        self._validate_references(fighters, attacks, combos, arenas, localization, source)
-        return fighters, attacks, combos, arenas, strings
+        visual_rows = visual_rows or _generated_visual_rows(tuple(fighters), tuple(arenas))
+        rigs, fighter_visuals, arena_visuals, animations, effects, hud = self._visuals(visual_rows, source)
+        self._validate_references(fighters, attacks, combos, arenas, localization, rigs, fighter_visuals, arena_visuals, animations, source)
+        return fighters, attacks, combos, arenas, strings, rigs, fighter_visuals, arena_visuals, animations, effects, hud
 
     def _apply(self, content) -> None:
-        fighters, attacks, combos, arenas, strings = content
+        fighters, attacks, combos, arenas, strings, rigs, fighter_visuals, arena_visuals, animations, effects, hud = content
         self.fighters.clear(); self.fighters.update(fighters)
         self.attacks.clear(); self.attacks.update(attacks)
         self.combos.clear(); self.combos.update(combos)
         self.arenas.clear(); self.arenas.update(arenas)
+        self.rigs.clear(); self.rigs.update(rigs)
+        self.fighter_visuals.clear(); self.fighter_visuals.update(fighter_visuals)
+        self.arena_visuals.clear(); self.arena_visuals.update(arena_visuals)
+        self.animations.clear(); self.animations.update(animations)
+        self.effects.clear(); self.effects.update(effects)
+        self.hud = hud
         self.localization.replace(strings)
 
     def _fighter(self, row: dict[str, object], source: str) -> FighterDefinition:
@@ -194,7 +237,157 @@ class ContentRegistry:
             raise ContentValidationError(f"{source}: arena '{content_id}' left_boundary must be less than right_boundary")
         return ArenaDefinition(content_id, name_key, description_key, _require_string(row, "preview", source, allow_empty=True), _strings(row, "background_layers", source), float(_number(row, "ground_y", source)), left, right, _require_string(row, "music", source, allow_empty=True), _require_string(row, "ambience", source, allow_empty=True), _boolean(row, "hazards_enabled_by_default", source), style, _boolean(row, "unlocked_by_default", source), _palette(row.get("palette"), source, content_id), _require_string(row, "hazard", source), localization.get(name_key), localization.get(description_key))
 
-    def _validate_references(self, fighters, attacks, combos, arenas, localization, source) -> None:
+    def _visuals(self, rows, source: str):
+        rigs = {item.id: item for item in (self._rig(row, source) for row in rows["rigs"])}
+        fighter_visuals = {item.fighter_id: item for item in (self._fighter_visual(row, source) for row in rows["fighters"])}
+        arena_visuals = {item.arena_id: item for item in (self._arena_visual(row, source) for row in rows["arenas"])}
+        animations = {item.id: item for item in (self._animation(row, source) for row in rows["animations"])}
+        effects = {item.id: item for item in (self._effect(row, source) for row in rows["effects"])}
+        hud_values = [self._hud(row, source) for row in rows["hud"]]
+        if len(hud_values) != 1:
+            raise ContentValidationError(f"{source}: hud.json must define exactly one hud")
+        return rigs, fighter_visuals, arena_visuals, animations, effects, hud_values[0]
+
+    def _rig(self, row, source: str) -> RigDefinition:
+        content_id = _require_string(row, "id", source); _valid_id(content_id, source)
+        bones = row.get("bones")
+        if not isinstance(bones, list) or not bones:
+            raise ContentValidationError(f"{source}: rig '{content_id}' bones must be a non-empty list")
+        parsed = tuple(self._bone(dict(item), source, content_id) for item in bones if isinstance(item, dict))
+        if len(parsed) != len(bones):
+            raise ContentValidationError(f"{source}: rig '{content_id}' has invalid bone rows")
+        ids = {bone.id for bone in parsed}
+        if len(ids) != len(parsed) or "root" not in ids:
+            raise ContentValidationError(f"{source}: rig '{content_id}' must contain unique bones and root")
+        for bone in parsed:
+            if bone.parent and bone.parent not in ids:
+                raise MissingContentReferenceError(f"{source}: rig '{content_id}' bone '{bone.id}' references unknown parent '{bone.parent}'")
+        return RigDefinition(content_id, tuple(sorted(parsed, key=lambda bone: bone.draw_order)))
+
+    def _bone(self, row, source: str, rig_id: str) -> BoneDefinition:
+        content_id = _require_string(row, "id", source); _valid_id(content_id, source)
+        parent = _require_string(row, "parent", source, allow_empty=True)
+        return BoneDefinition(
+            content_id,
+            parent,
+            _point(row.get("local_position"), source, f"{rig_id}.{content_id}.local_position"),
+            float(_number(row, "rotation", source)),
+            _point(row.get("scale"), source, f"{rig_id}.{content_id}.scale", default=(1.0, 1.0)),
+            float(_number(row, "length", source)),
+            float(_number(row, "thickness", source)),
+            _point(row.get("pivot"), source, f"{rig_id}.{content_id}.pivot", default=(0.0, 0.0)),
+            _require_string(row, "shape", source),
+            int(_number(row, "draw_order", source, integer=True)),
+            _require_string(row, "palette_role", source),
+            _require_string(row, "attachment", source, allow_empty=True),
+        )
+
+    def _fighter_visual(self, row, source: str) -> FighterVisualDefinition:
+        content_id = _require_string(row, "id", source); _valid_id(content_id, source)
+        return FighterVisualDefinition(
+            content_id,
+            _require_string(row, "fighter_id", source),
+            _require_string(row, "rig_id", source),
+            _require_string(row, "silhouette", source),
+            _require_string(row, "stance", source),
+            float(_number(row, "scale", source)),
+            _require_string(row, "idle_clip", source),
+            _require_string(row, "walk_clip", source),
+            _require_string(row, "attack_clip", source),
+            _require_string(row, "victory_clip", source),
+            _require_string(row, "defeat_clip", source),
+            _palette_dict(row.get("palette_roles"), source, content_id),
+            tuple(_strings(row, "attachments", source)),
+            _require_string(row, "effect_style", source),
+        )
+
+    def _arena_visual(self, row, source: str) -> ArenaVisualDefinition:
+        content_id = _require_string(row, "id", source); _valid_id(content_id, source)
+        layers = row.get("layers")
+        if not isinstance(layers, list) or any(not isinstance(layer, dict) for layer in layers):
+            raise ContentValidationError(f"{source}: arena visual '{content_id}' layers must be objects")
+        return ArenaVisualDefinition(
+            content_id,
+            _require_string(row, "arena_id", source),
+            _require_string(row, "style", source),
+            _palette(row.get("palette"), source, content_id),
+            tuple(dict(layer) for layer in layers),
+            _require_string(row, "particle_style", source),
+            _color(row.get("light_color"), source, f"{content_id}.light_color"),
+            _color(row.get("shadow_color"), source, f"{content_id}.shadow_color"),
+        )
+
+    def _animation(self, row, source: str) -> AnimationDefinition:
+        content_id = _require_string(row, "id", source); _valid_id(content_id, source)
+        keyframes = row.get("keyframes")
+        if not isinstance(keyframes, list):
+            raise ContentValidationError(f"{source}: animation '{content_id}' keyframes must be a list")
+        parsed = tuple(self._keyframe(dict(item), source, content_id) for item in keyframes if isinstance(item, dict))
+        if len(parsed) != len(keyframes):
+            raise ContentValidationError(f"{source}: animation '{content_id}' has invalid keyframes")
+        duration = int(_number(row, "duration_frames", source, integer=True))
+        if duration <= 0:
+            raise ContentValidationError(f"{source}: animation '{content_id}' duration must be positive")
+        events = row.get("events", [])
+        if not isinstance(events, list) or any(not isinstance(event, dict) for event in events):
+            raise ContentValidationError(f"{source}: animation '{content_id}' events must be objects")
+        return AnimationDefinition(
+            content_id,
+            _require_string(row, "state", source),
+            duration,
+            _boolean(row, "loop", source),
+            float(_number(row, "playback_speed", source)),
+            int(_number(row, "priority", source, integer=True)),
+            int(_number(row, "blend_frames", source, integer=True)),
+            _boolean(row, "restart", source),
+            _boolean(row, "freeze_on_hit_stop", source),
+            tuple(sorted(parsed, key=lambda item: (item.bone_id, item.frame))),
+            tuple(dict(event) for event in events),
+        )
+
+    def _keyframe(self, row, source: str, animation_id: str) -> AnimationKeyframeDefinition:
+        frame = int(_number(row, "frame", source, integer=True))
+        if frame < 0:
+            raise ContentValidationError(f"{source}: animation '{animation_id}' has negative keyframe")
+        return AnimationKeyframeDefinition(
+            frame,
+            _require_string(row, "bone_id", source),
+            _point(row.get("translation"), source, f"{animation_id}.translation"),
+            float(_number(row, "rotation", source)),
+            _point(row.get("scale"), source, f"{animation_id}.scale", default=(1.0, 1.0)),
+            float(row.get("alpha", 1.0)),
+        )
+
+    def _effect(self, row, source: str) -> EffectDefinition:
+        content_id = _require_string(row, "id", source); _valid_id(content_id, source)
+        return EffectDefinition(
+            content_id,
+            _require_string(row, "event", source),
+            int(_number(row, "particle_count", source, integer=True)),
+            int(_number(row, "lifetime_frames", source, integer=True)),
+            float(_number(row, "speed", source)),
+            _color(row.get("color"), source, f"{content_id}.color"),
+            _color(row.get("secondary_color"), source, f"{content_id}.secondary_color"),
+            float(_number(row, "radius", source)),
+            bool(row.get("pooled", True)),
+        )
+
+    def _hud(self, row, source: str) -> HudDefinition:
+        content_id = _require_string(row, "id", source); _valid_id(content_id, source)
+        keys = row.get("announcer_keys")
+        if not isinstance(keys, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in keys.items()):
+            raise ContentValidationError(f"{source}: hud '{content_id}' announcer_keys must map strings")
+        return HudDefinition(
+            content_id,
+            int(_number(row, "health_width", source, integer=True)),
+            int(_number(row, "meter_segments", source, integer=True)),
+            int(_number(row, "meter_max", source, integer=True)),
+            _require_string(row, "font_family", source),
+            _palette_dict(row.get("palette"), source, content_id),
+            dict(keys),
+        )
+
+    def _validate_references(self, fighters, attacks, combos, arenas, localization, rigs, fighter_visuals, arena_visuals, animations, source) -> None:
         for attack in attacks.values():
             if attack.owner_id != "common" and attack.owner_id not in fighters:
                 raise MissingContentReferenceError(f"{source}: attack '{attack.id}' references unknown owner '{attack.owner_id}'")
@@ -228,6 +421,18 @@ class ContentRegistry:
         for arena in arenas.values():
             if not localization.has(arena.name_key) or not localization.has(arena.description_key):
                 raise MissingContentReferenceError(f"{source}: arena '{arena.id}' references unknown localization key")
+        for fighter_id in fighters:
+            visual = fighter_visuals.get(fighter_id)
+            if visual is None:
+                raise MissingContentReferenceError(f"{source}: fighter '{fighter_id}' has no visual definition")
+            if visual.rig_id not in rigs:
+                raise MissingContentReferenceError(f"{source}: fighter visual '{visual.id}' references unknown rig")
+            for clip in (visual.idle_clip, visual.walk_clip, visual.attack_clip, visual.victory_clip, visual.defeat_clip):
+                if clip not in animations:
+                    raise MissingContentReferenceError(f"{source}: fighter visual '{visual.id}' references unknown animation '{clip}'")
+        for arena_id in arenas:
+            if arena_id not in arena_visuals:
+                raise MissingContentReferenceError(f"{source}: arena '{arena_id}' has no visual definition")
 
     def get_fighter(self, fighter_id: str) -> FighterDefinition:
         return self._get("fighter", fighter_id, self.fighters, "fighters.json")
@@ -276,6 +481,19 @@ def _boolean(row, field, source):
 def _palette(value, source, content_id):
     if not isinstance(value, list) or len(value) != 3 or any(not isinstance(c, list) or len(c) != 3 or any(not isinstance(v, int) or not 0 <= v <= 255 for v in c) for c in value): raise ContentValidationError(f"{source}: '{content_id}' palette must contain three RGB colors")
     return tuple(tuple(c) for c in value)
+def _color(value, source, field):
+    if not isinstance(value, list) or len(value) != 3 or any(not isinstance(v, int) or not 0 <= v <= 255 for v in value): raise ContentValidationError(f"{source}: '{field}' must be an RGB color")
+    return tuple(value)
+def _palette_dict(value, source, content_id):
+    if not isinstance(value, dict) or not value:
+        raise ContentValidationError(f"{source}: '{content_id}' palette roles must be an object")
+    return {str(key): _color(color, source, f"{content_id}.{key}") for key, color in value.items()}
+def _point(value, source, field, *, default=None):
+    if value is None and default is not None:
+        return default
+    if not isinstance(value, list) or len(value) != 2 or any(isinstance(v, bool) or not isinstance(v, (int, float)) for v in value):
+        raise ContentValidationError(f"{source}: '{field}' must be a two-number point")
+    return float(value[0]), float(value[1])
 
 def _frame_mapping(value,source,content_id,total,field):
     if not isinstance(value,dict):raise ContentValidationError(f"{source}: attack '{content_id}' {field} must be an object")
@@ -301,6 +519,161 @@ def _projectile(value,source,content_id,total):
     if value["hit_level"] not in HIT_LEVELS or not isinstance(value["properties"],list) or set(value["properties"])-PROJECTILE_PROPERTIES:raise ContentValidationError(f"{source}: invalid projectile level/properties in '{content_id}'")
     if value["multi_hit"] and value["multi_hit_interval_frames"]<=0:raise ContentValidationError(f"{source}: invalid projectile multi-hit interval in '{content_id}'")
     return dict(value)
+
+def _generated_visual_rows(fighter_ids: tuple[str, ...], arena_ids: tuple[str, ...]):
+    bones = [
+        ("root", "", [0, 0], 0, 0, 0, "circle", 0, "shadow"),
+        ("pelvis", "root", [0, -92], 0, 34, 24, "ellipse", 1, "cloth"),
+        ("torso_lower", "pelvis", [0, -28], -4, 42, 26, "capsule", 2, "secondary"),
+        ("torso_upper", "torso_lower", [0, -36], 2, 52, 32, "capsule", 3, "primary"),
+        ("neck", "torso_upper", [0, -34], 0, 12, 12, "capsule", 4, "secondary"),
+        ("head", "neck", [0, -22], 0, 30, 28, "ellipse", 5, "skin"),
+        ("left_shoulder", "torso_upper", [-28, -26], -12, 12, 12, "circle", 6, "secondary"),
+        ("left_upper_arm", "left_shoulder", [-16, 26], -18, 42, 14, "capsule", 7, "primary"),
+        ("left_forearm", "left_upper_arm", [-10, 38], -8, 38, 12, "capsule", 8, "secondary"),
+        ("left_hand", "left_forearm", [-4, 34], 0, 12, 12, "circle", 9, "accent"),
+        ("right_shoulder", "torso_upper", [28, -26], 12, 12, 12, "circle", 6, "secondary"),
+        ("right_upper_arm", "right_shoulder", [16, 26], 18, 42, 14, "capsule", 7, "primary"),
+        ("right_forearm", "right_upper_arm", [10, 38], 8, 38, 12, "capsule", 8, "secondary"),
+        ("right_hand", "right_forearm", [4, 34], 0, 12, 12, "circle", 9, "accent"),
+        ("left_thigh", "pelvis", [-16, 26], -6, 52, 16, "capsule", 10, "primary"),
+        ("left_shin", "left_thigh", [-4, 50], 3, 52, 13, "capsule", 11, "secondary"),
+        ("left_foot", "left_shin", [-8, 50], -8, 24, 10, "capsule", 12, "accent"),
+        ("right_thigh", "pelvis", [16, 26], 6, 52, 16, "capsule", 10, "primary"),
+        ("right_shin", "right_thigh", [4, 50], -3, 52, 13, "capsule", 11, "secondary"),
+        ("right_foot", "right_shin", [8, 50], 8, 24, 10, "capsule", 12, "accent"),
+        ("weapon", "right_hand", [12, -8], 18, 44, 5, "blade", 13, "accent"),
+        ("cloth_left", "pelvis", [-24, -6], -18, 42, 7, "ribbon", 14, "cloth"),
+        ("cloth_right", "pelvis", [24, -6], 18, 42, 7, "ribbon", 14, "cloth"),
+        ("hair", "head", [0, -22], 0, 24, 9, "ribbon", 15, "secondary"),
+        ("cape", "torso_upper", [0, -18], 0, 72, 8, "ribbon", 0, "cloth"),
+        ("armor", "torso_upper", [24, -18], 12, 30, 12, "plate", 16, "secondary"),
+        ("energy_core", "torso_upper", [0, -14], 0, 14, 14, "circle", 17, "accent"),
+    ]
+    rig = {
+        "id": "default_humanoid",
+        "bones": [
+            {
+                "id": bone_id,
+                "parent": parent,
+                "local_position": position,
+                "rotation": rotation,
+                "scale": [1, 1],
+                "length": length,
+                "thickness": thickness,
+                "pivot": [0, 0],
+                "shape": shape,
+                "draw_order": order,
+                "palette_role": role,
+                "attachment": "",
+            }
+            for bone_id, parent, position, rotation, length, thickness, shape, order, role in bones
+        ],
+    }
+    palettes = {
+        "kael": {"primary": [205, 58, 65], "secondary": [232, 181, 82], "accent": [238, 241, 244], "cloth": [35, 38, 46], "skin": [196, 150, 118], "shadow": [0, 0, 0]},
+        "sable": {"primary": [63, 201, 197], "secondary": [142, 104, 207], "accent": [232, 181, 82], "cloth": [24, 28, 36], "skin": [164, 120, 112], "shadow": [0, 0, 0]},
+        "orrin": {"primary": [90, 191, 118], "secondary": [176, 186, 192], "accent": [232, 181, 82], "cloth": [28, 33, 30], "skin": [170, 128, 96], "shadow": [0, 0, 0]},
+        "mira": {"primary": [79, 150, 214], "secondary": [238, 241, 244], "accent": [63, 201, 197], "cloth": [26, 31, 45], "skin": [198, 136, 120], "shadow": [0, 0, 0]},
+        "lin": {"primary": [188, 94, 68], "secondary": [242, 202, 132], "accent": [90, 191, 118], "cloth": [26, 26, 34], "skin": [202, 146, 102], "shadow": [0, 0, 0]},
+        "ren_kaido": {"primary": [35, 61, 102], "secondary": [181, 126, 67], "accent": [87, 202, 236], "cloth": [18, 24, 38], "skin": [172, 122, 92], "shadow": [0, 0, 0]},
+    }
+    silhouettes = {
+        "kael": ("ash_guard", 1.0, ["armor", "energy_core"]),
+        "sable": ("veil_runner", 0.92, ["cloth_left", "cloth_right", "hair"]),
+        "orrin": ("iron_monk", 1.1, ["armor"]),
+        "mira": ("storm_dancer", 0.96, ["cloth_left", "hair", "energy_core"]),
+        "lin": ("wind_disciple", 0.98, ["cloth_right", "weapon"]),
+        "ren_kaido": ("storm_warden", 1.06, ["armor", "cloth_left", "cloth_right", "energy_core"]),
+    }
+    fighters = []
+    for fighter_id in fighter_ids:
+        silhouette, scale, attachments = silhouettes.get(fighter_id, ("guardian", 1.0, ["energy_core"]))
+        fighters.append({
+            "id": f"{fighter_id}_visual",
+            "fighter_id": fighter_id,
+            "rig_id": "default_humanoid",
+            "silhouette": silhouette,
+            "stance": "offset_guard",
+            "scale": scale,
+            "idle_clip": "idle",
+            "walk_clip": "walk_forward",
+            "attack_clip": "strike_flash",
+            "victory_clip": "victory",
+            "defeat_clip": "defeat",
+            "palette_roles": palettes.get(fighter_id, palettes["kael"]),
+            "attachments": attachments,
+            "effect_style": "rune_sparks",
+        })
+    arena_palette = {
+        "neon_foundry": [[16, 20, 24], [207, 53, 63], [63, 201, 197]],
+        "storm_pier": [[10, 18, 28], [79, 150, 214], [232, 181, 82]],
+        "glass_court": [[24, 24, 31], [142, 104, 207], [238, 241, 244]],
+        "great_wall": [[18, 24, 34], [164, 112, 62], [232, 181, 82]],
+        "dragon_mountains": [[12, 22, 30], [90, 164, 122], [217, 232, 238]],
+        "pagoda_ridge": [[12, 16, 24], [163, 86, 164], [242, 202, 132]],
+    }
+    arenas = [
+        {
+            "id": f"{arena_id}_visual",
+            "arena_id": arena_id,
+            "style": arena_id,
+            "palette": arena_palette.get(arena_id, arena_palette["neon_foundry"]),
+            "layers": [
+                {"kind": "sky", "parallax": 0.15, "density": 5},
+                {"kind": "mid", "parallax": 0.45, "density": 8},
+                {"kind": "front", "parallax": 0.8, "density": 12},
+            ],
+            "particle_style": "embers",
+            "light_color": [242, 202, 132],
+            "shadow_color": [0, 0, 0],
+        }
+        for arena_id in arena_ids
+    ]
+    animations = [
+        _animation_row("idle", "IDLE", 54, True, [("torso_upper", 0, [0, 0], -2), ("torso_upper", 27, [0, -5], 2), ("head", 27, [0, -2], -1)]),
+        _animation_row("walk_forward", "WALK_FORWARD", 32, True, [("left_thigh", 0, [-6, 0], -14), ("right_thigh", 0, [6, 0], 14), ("left_thigh", 16, [6, 0], 14), ("right_thigh", 16, [-6, 0], -14)]),
+        _animation_row("strike_flash", "ATTACK_ACTIVE", 24, False, [("right_forearm", 0, [0, 0], 10), ("right_forearm", 8, [18, -4], -36), ("right_forearm", 18, [0, 0], 0)]),
+        _animation_row("victory", "VICTORY", 80, True, [("right_hand", 0, [0, 0], 0), ("right_hand", 24, [8, -42], -30), ("head", 24, [0, -4], 4)]),
+        _animation_row("defeat", "DEFEAT", 60, False, [("torso_upper", 0, [0, 0], 0), ("torso_upper", 40, [0, 42], 84), ("head", 40, [16, 24], 50)]),
+        _animation_row("crouch", "CROUCH", 20, True, [("pelvis", 0, [0, 18], 0), ("torso_upper", 0, [0, 10], -8)]),
+        _animation_row("airborne", "AIRBORNE", 24, True, [("left_thigh", 0, [0, 0], 24), ("right_thigh", 0, [0, 0], -24)]),
+        _animation_row("block_high", "BLOCK", 20, True, [("left_forearm", 0, [14, -12], -60), ("right_forearm", 0, [-14, -12], 60)]),
+    ]
+    effects = [
+        {"id": "light_hit_spark", "event": "ATTACK_HIT", "particle_count": 14, "lifetime_frames": 18, "speed": 5, "color": [242, 202, 132], "secondary_color": [238, 241, 244], "radius": 4, "pooled": True},
+        {"id": "block_spark", "event": "ATTACK_BLOCKED", "particle_count": 10, "lifetime_frames": 15, "speed": 4, "color": [79, 150, 214], "secondary_color": [238, 241, 244], "radius": 3, "pooled": True},
+        {"id": "projectile_impact", "event": "PROJECTILE_HIT", "particle_count": 18, "lifetime_frames": 20, "speed": 6, "color": [87, 202, 236], "secondary_color": [142, 104, 207], "radius": 5, "pooled": True},
+        {"id": "throw_impact", "event": "THROW", "particle_count": 16, "lifetime_frames": 18, "speed": 5, "color": [207, 53, 63], "secondary_color": [232, 181, 82], "radius": 5, "pooled": True},
+    ]
+    hud = [{
+        "id": "default_hud",
+        "health_width": 360,
+        "meter_segments": 3,
+        "meter_max": 3000,
+        "font_family": "Segoe UI",
+        "palette": {"health": [207, 53, 63], "recoverable": [232, 181, 82], "meter": [63, 201, 197], "panel": [26, 30, 36], "text": [238, 241, 244]},
+        "announcer_keys": {"round": "announcer.round", "ready": "announcer.ready", "fight": "announcer.fight", "ko": "announcer.ko", "draw": "announcer.draw", "double_ko": "announcer.double_ko", "sudden_death": "announcer.sudden_death", "victory": "announcer.victory", "shadow_finish": "finish.shadow"},
+    }]
+    return {"rigs": [rig], "fighters": fighters, "arenas": arenas, "animations": animations, "effects": effects, "hud": hud}
+
+def _animation_row(content_id, state, duration, loop, keys):
+    return {
+        "id": content_id,
+        "state": state,
+        "duration_frames": duration,
+        "loop": loop,
+        "playback_speed": 1.0,
+        "priority": 1,
+        "blend_frames": 4,
+        "restart": False,
+        "freeze_on_hit_stop": True,
+        "keyframes": [
+            {"bone_id": bone, "frame": frame, "translation": translation, "rotation": rotation, "scale": [1, 1], "alpha": 1.0}
+            for bone, frame, translation, rotation in keys
+        ],
+        "events": [],
+    }
 
 
 _DEFAULT_REGISTRY: ContentRegistry | None = None

@@ -2,18 +2,18 @@ from __future__ import annotations
 import pygame
 from .combat.constants import DEBUG_COLORS,SIMULATION_FPS
 from .settings import COLORS,VIRTUAL_WIDTH
+from .visual import RenderPipeline
 
 
 class CombatRenderer:
-    def __init__(self,registry):
-        self.registry=registry;self.previous=None;self.debug={i:False for i in range(1,9)};self.font=None;self.render_fps=0;self.simulation_frame_ms=0;self.clock=None
+    def __init__(self,registry,settings=None):
+        self.registry=registry;self.settings=settings;self.pipeline=RenderPipeline(registry,settings);self.previous=None;self.debug={i:False for i in range(1,9)};self.font=None;self.render_fps=0;self.simulation_frame_ms=0;self.clock=None
+    def set_arena(self,arena_id):self.pipeline.set_arena(arena_id)
     def handle_event(self,event):
         if event.type==pygame.KEYDOWN and pygame.K_F1<=event.key<=pygame.K_F8:self.debug[event.key-pygame.K_F1+1]=not self.debug[event.key-pygame.K_F1+1]
+    def handle_combat_events(self,events):self.pipeline.handle_events(events,self.settings)
     def draw(self,surface,snapshot,alpha=0,world=None):
-        surface.fill((16,20,24));pygame.draw.line(surface,COLORS["gold"],(0,584),(VIRTUAL_WIDTH,584),4)
-        for snap in (snapshot.fighter_one,snapshot.fighter_two):
-            definition=self.registry.get_fighter(snap.fighter_id);rect=pygame.Rect(int(snap.x-45),int(snap.y-218),90,218);pygame.draw.rect(surface,definition.palette[0],rect,border_radius=22);pygame.draw.rect(surface,definition.palette[1],rect,4,border_radius=22)
-        self._bar(surface,70,38,snapshot.fighter_one.health,self.registry.get_fighter(snapshot.fighter_one.fighter_id).max_health);self._bar(surface,850,38,snapshot.fighter_two.health,self.registry.get_fighter(snapshot.fighter_two.fighter_id).max_health)
+        self.pipeline.draw(surface,snapshot,alpha,world,self.settings)
         if world:self._geometry(surface,world)
         if any(self.debug.values()):self._overlay(surface,snapshot,world,alpha)
         self.previous=snapshot
