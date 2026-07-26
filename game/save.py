@@ -10,7 +10,7 @@ from .settings import SAVE_DIR
 
 
 SAVE_FILE = SAVE_DIR / "profile.json"
-SAVE_VERSION = 2
+SAVE_VERSION = 3
 LEGACY_FIGHTER_ID = "ryu"
 ORIGINAL_FIGHTER_ID = "ren_kaido"
 
@@ -46,6 +46,10 @@ class ProfileData:
     arcade_progress: dict[str, object] = field(default_factory=dict)
     story_progress: dict[str, object] = field(default_factory=dict)
     tournament_progress: dict[str, object] = field(default_factory=dict)
+    training_preferences: dict[str, object] = field(default_factory=dict)
+    statistics: dict[str, object] = field(default_factory=dict)
+    processed_result_ids: list[str] = field(default_factory=list)
+    received_reward_ids: list[str] = field(default_factory=list)
     record: MatchRecord = field(default_factory=MatchRecord)
 
 
@@ -119,6 +123,10 @@ class SaveManager:
             arcade_progress=_object(data.get("arcade_progress")),
             story_progress=_object(data.get("story_progress")),
             tournament_progress=_object(data.get("tournament_progress")),
+            training_preferences=_object(data.get("training_preferences")),
+            statistics=_object(data.get("statistics")),
+            processed_result_ids=_string_list(data.get("processed_result_ids"), []),
+            received_reward_ids=_string_list(data.get("received_reward_ids"), []),
             record=record,
         )
         if migrated or data.get("version") != SAVE_VERSION:
