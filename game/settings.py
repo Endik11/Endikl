@@ -119,6 +119,16 @@ class VideoSettings:
     display_mode: str = "windowed"
     camera_shake: bool = True
     particles: bool = True
+    trails: bool = True
+    shadows: bool = True
+    flashes: bool = True
+    dynamic_zoom: bool = True
+    background_animation: bool = True
+    damage_numbers: bool = True
+    colorblind_indicators: bool = False
+    reduced_motion: bool = False
+    reduced_flashes: bool = False
+    allow_unverified_assets: bool = False
     fps_limit: int = 60
     ui_scale: float = 1.0
 
@@ -192,6 +202,16 @@ class SettingsManager:
             ),
             camera_shake=_boolean(video_data.get("camera_shake"), base.video.camera_shake),
             particles=_boolean(video_data.get("particles"), base.video.particles),
+            trails=_boolean(video_data.get("trails"), base.video.trails),
+            shadows=_boolean(video_data.get("shadows"), base.video.shadows),
+            flashes=_boolean(video_data.get("flashes"), base.video.flashes),
+            dynamic_zoom=_boolean(video_data.get("dynamic_zoom"), base.video.dynamic_zoom),
+            background_animation=_boolean(video_data.get("background_animation"), base.video.background_animation),
+            damage_numbers=_boolean(video_data.get("damage_numbers"), base.video.damage_numbers),
+            colorblind_indicators=_boolean(video_data.get("colorblind_indicators"), base.video.colorblind_indicators),
+            reduced_motion=_boolean(video_data.get("reduced_motion"), base.video.reduced_motion),
+            reduced_flashes=_boolean(video_data.get("reduced_flashes"), base.video.reduced_flashes),
+            allow_unverified_assets=_boolean(video_data.get("allow_unverified_assets"), base.video.allow_unverified_assets),
             fps_limit=_choice_int(video_data.get("fps_limit"), base.video.fps_limit, set(FPS_OPTIONS)),
             ui_scale=_bounded_float(video_data.get("ui_scale"), base.video.ui_scale, 0.75, 2.0),
         )

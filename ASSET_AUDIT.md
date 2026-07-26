@@ -3,8 +3,11 @@
 No source or license metadata accompanied the files below. Consequently every
 file is marked **UNKNOWN** and must not be represented as freely redistributable.
 The game does not require any of them: `ResourceReport`, procedural fighter
-rendering, procedural arenas, and `missing_artwork_policy: procedural_fallback`
-in `data/defaults.json` keep startup and play functional when they are absent.
+rendering, procedural arenas, `missing_artwork_policy: procedural_fallback`,
+and `allow_unverified_assets: false` in `data/defaults.json` keep startup and
+play functional when they are absent. Unverified image files are blocked by
+default and only loaded when the user explicitly enables `allow_unverified_assets`.
+That opt-in path logs a warning and does not make any redistribution claim.
 
 | Path | Type | Current use | Source | License | Safe to distribute | Temporary | Fallback |
 |---|---|---|---|---|---|---|---|

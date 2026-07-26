@@ -21,7 +21,13 @@ class ToneBank:
             self.enabled = True
             self.sounds = {
                 "hit": self._tone(140, 0.08, volume),
+                "heavy_hit": self._tone(110, 0.11, volume),
                 "block": self._tone(96, 0.06, volume * 0.8),
+                "armor": self._tone(180, 0.07, volume * 0.7),
+                "projectile": self._tone(330, 0.09, volume * 0.75),
+                "throw": self._tone(72, 0.14, volume * 0.9),
+                "announcer": self._tone(260, 0.12, volume * 0.55),
+                "footstep": self._tone(60, 0.04, volume * 0.35),
                 "select": self._tone(520, 0.05, volume * 0.6),
                 "ko": self._tone(70, 0.35, volume),
             }
@@ -71,6 +77,25 @@ class AudioManager:
     def play_sfx(self, name: str) -> None:
         if not self.muted:
             self.tones.play(name)
+
+    def play_combat_event(self, event) -> None:
+        name = getattr(event.type, "name", str(event.type))
+        sfx = {
+            "ATTACK_HIT": "hit",
+            "ATTACK_BLOCKED": "block",
+            "ARMOR_ABSORBED": "armor",
+            "PROJECTILE_CREATED": "projectile",
+            "PROJECTILE_HIT": "projectile",
+            "PROJECTILE_BLOCKED": "block",
+            "PROJECTILE_CLASH": "projectile",
+            "THROW_CONNECTED": "throw",
+            "THROW_DAMAGE_APPLIED": "throw",
+            "ROUND_ENDED": "ko",
+            "ROUND_DRAW": "announcer",
+            "ROUND_DOUBLE_KO": "announcer",
+        }.get(name)
+        if sfx:
+            self.play_sfx(sfx)
 
     def play_music(self, path: str | Path, loops: int = -1) -> bool:
         music_path = Path(path)

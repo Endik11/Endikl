@@ -1,0 +1,14 @@
+{
+  "effects": [
+    {"id":"light_hit_spark","event":"ATTACK_HIT","particle_count":14,"lifetime_frames":18,"speed":5,"color":[242,202,132],"secondary_color":[238,241,244],"radius":4,"pooled":true},
+    {"id":"heavy_hit_spark","event":"HEAVY_HIT","particle_count":22,"lifetime_frames":22,"speed":7,"color":[207,53,63],"secondary_color":[232,181,82],"radius":5,"pooled":true},
+    {"id":"block_spark","event":"ATTACK_BLOCKED","particle_count":10,"lifetime_frames":15,"speed":4,"color":[79,150,214],"secondary_color":[238,241,244],"radius":3,"pooled":true},
+    {"id":"armor_spark","event":"ARMOR","particle_count":12,"lifetime_frames":16,"speed":4,"color":[176,186,192],"secondary_color":[232,181,82],"radius":4,"pooled":true},
+    {"id":"projectile_impact","event":"PROJECTILE_HIT","particle_count":18,"lifetime_frames":20,"speed":6,"color":[87,202,236],"secondary_color":[142,104,207],"radius":5,"pooled":true},
+    {"id":"projectile_block","event":"PROJECTILE_BLOCKED","particle_count":14,"lifetime_frames":18,"speed":4,"color":[63,201,197],"secondary_color":[238,241,244],"radius":4,"pooled":true},
+    {"id":"projectile_clash","event":"PROJECTILE_CLASH","particle_count":20,"lifetime_frames":24,"speed":6,"color":[142,104,207],"secondary_color":[232,181,82],"radius":6,"pooled":true},
+    {"id":"throw_impact","event":"THROW","particle_count":16,"lifetime_frames":18,"speed":5,"color":[207,53,63],"secondary_color":[232,181,82],"radius":5,"pooled":true},
+    {"id":"landing_dust","event":"LANDING","particle_count":8,"lifetime_frames":18,"speed":3,"color":[164,112,62],"secondary_color":[232,181,82],"radius":3,"pooled":true},
+    {"id":"ko_bloom","event":"KO","particle_count":28,"lifetime_frames":38,"speed":5,"color":[238,241,244],"secondary_color":[207,53,63],"radius":8,"pooled":true}
+  ]
+}

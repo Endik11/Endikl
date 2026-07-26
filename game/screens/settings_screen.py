@@ -24,6 +24,7 @@ class SettingsScreen(BaseScreen):
             ("FPS", self._fps_rows),
             ("Звук", self._audio_rows),
             ("Управление", self._control_rows),
+            ("Visual", self._visual_rows),
             ("Назад", self._back_row),
         ]
         self.section_index = 0
@@ -66,13 +67,13 @@ class SettingsScreen(BaseScreen):
                     self.select_section(index)
                     return None
         if pressed.get("right"):
-            if self.section_index in {1, 2, 3}:
+            if self.section_index in {1, 2, 3, 4}:
                 self.rows[self.selected][2](1)
             else:
                 self.select_section(min(len(self.sections) - 1, self.section_index + 1))
             return None
         if pressed.get("left"):
-            if self.section_index in {1, 2, 3}:
+            if self.section_index in {1, 2, 3, 4}:
                 self.rows[self.selected][2](-1)
             else:
                 self.select_section(max(0, self.section_index - 1))
@@ -100,7 +101,8 @@ class SettingsScreen(BaseScreen):
         self.selected = min(self.selected, max(0, len(self.rows) - 1))
 
     def _row_rect(self, index: int) -> pygame.Rect:
-        return pygame.Rect(94, 242 + index * 48 - 10, 720, 38)
+        spacing = 32 if len(self.rows) > 8 else 48
+        return pygame.Rect(94, 232 + index * spacing - 8, 760, min(34, spacing))
 
     def _section_rect(self, index: int) -> pygame.Rect:
         return pygame.Rect(94 + index * 124, 190, 110, 34)
@@ -110,8 +112,23 @@ class SettingsScreen(BaseScreen):
             ("Разрешение", self._resolution_value, self._change_resolution),
             ("Режим окна", self._display_mode_value, self._change_display_mode),
             ("Полноэкранный", self._fullscreen_value, self._toggle_fullscreen),
-            ("Частицы", self._particles_value, self._toggle_particles),
-            ("Тряска камеры", self._shake_value, self._toggle_shake),
+            ("Назад", lambda: "", lambda direction: None),
+        ]
+
+    def _visual_rows(self) -> list[Row]:
+        return [
+            ("Particles", lambda: self._bool_value(self.settings.video.particles), lambda direction: self._toggle_video("particles")),
+            ("Trails", lambda: self._bool_value(self.settings.video.trails), lambda direction: self._toggle_video("trails")),
+            ("Shadows", lambda: self._bool_value(self.settings.video.shadows), lambda direction: self._toggle_video("shadows")),
+            ("Shake", lambda: self._bool_value(self.settings.video.camera_shake), lambda direction: self._toggle_video("camera_shake")),
+            ("Flashes", lambda: self._bool_value(self.settings.video.flashes), lambda direction: self._toggle_video("flashes")),
+            ("Dynamic zoom", lambda: self._bool_value(self.settings.video.dynamic_zoom), lambda direction: self._toggle_video("dynamic_zoom")),
+            ("Background", lambda: self._bool_value(self.settings.video.background_animation), lambda direction: self._toggle_video("background_animation")),
+            ("Damage nums", lambda: self._bool_value(self.settings.video.damage_numbers), lambda direction: self._toggle_video("damage_numbers")),
+            ("Colorblind", lambda: self._bool_value(self.settings.video.colorblind_indicators), lambda direction: self._toggle_video("colorblind_indicators")),
+            ("Reduced motion", lambda: self._bool_value(self.settings.video.reduced_motion), lambda direction: self._toggle_video("reduced_motion")),
+            ("Reduced flashes", lambda: self._bool_value(self.settings.video.reduced_flashes), lambda direction: self._toggle_video("reduced_flashes")),
+            ("Unverified assets", lambda: self._bool_value(self.settings.video.allow_unverified_assets), lambda direction: self._toggle_video("allow_unverified_assets")),
             ("Назад", lambda: "", lambda direction: None),
         ]
 
@@ -195,6 +212,12 @@ class SettingsScreen(BaseScreen):
     def _toggle_fullscreen(self, direction: int) -> None:
         self.settings.video.fullscreen = not self.settings.video.fullscreen
 
+    def _bool_value(self, value: bool) -> str:
+        return "On" if value else "Off"
+
+    def _toggle_video(self, field: str) -> None:
+        setattr(self.settings.video, field, not getattr(self.settings.video, field))
+
     def draw(self, surface, fonts=None, t=None) -> None:
         fonts = fonts or self.fonts
         if fonts is None:
@@ -207,7 +230,9 @@ class SettingsScreen(BaseScreen):
             pygame.draw.rect(surface, COLORS["gold"] if active else COLORS["panel_light"], rect, border_radius=8)
             draw_text(surface, fonts["tiny"], label, rect.center, COLORS["white"], center=True)
         for index, (label, value, _) in enumerate(self.rows):
-            y = 242 + index * 48
-            draw_text(surface, fonts["menu"], label, (124, y), COLORS["gold"] if index == self.selected else COLORS["white"])
-            draw_text(surface, fonts["menu"], value(), (520, y), COLORS["cyan"])
+            spacing = 32 if len(self.rows) > 8 else 48
+            y = 232 + index * spacing
+            row_font = fonts["small"] if len(self.rows) > 8 else fonts["menu"]
+            draw_text(surface, row_font, label, (124, y), COLORS["gold"] if index == self.selected else COLORS["white"])
+            draw_text(surface, row_font, value(), (610, y), COLORS["cyan"])
 

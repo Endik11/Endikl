@@ -1,0 +1,29 @@
+{
+  "hud": [
+    {
+      "id": "default_hud",
+      "health_width": 360,
+      "meter_segments": 3,
+      "meter_max": 3000,
+      "font_family": "Segoe UI",
+      "palette": {
+        "health": [207, 53, 63],
+        "recoverable": [232, 181, 82],
+        "meter": [63, 201, 197],
+        "panel": [26, 30, 36],
+        "text": [238, 241, 244]
+      },
+      "announcer_keys": {
+        "round": "announcer.round",
+        "ready": "announcer.ready",
+        "fight": "announcer.fight",
+        "ko": "announcer.ko",
+        "draw": "announcer.draw",
+        "double_ko": "announcer.double_ko",
+        "sudden_death": "announcer.sudden_death",
+        "victory": "announcer.victory",
+        "shadow_finish": "finish.shadow"
+      }
+    }
+  ]
+}

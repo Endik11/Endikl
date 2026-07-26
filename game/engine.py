@@ -52,7 +52,9 @@ class GameEngine:
         self.audio = AudioManager(self.settings)
         self.running = True
         self.session = GameSession()
-        self.resource_report = inspect_optional_assets()
+        self.resource_report = inspect_optional_assets(
+            allow_unverified_assets=self.settings.video.allow_unverified_assets,
+        )
         self.state_manager = StateManager()
         self.match_runtime = CombatMatchRuntime(
             self.content,
