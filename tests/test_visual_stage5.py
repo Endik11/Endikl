@@ -19,6 +19,7 @@ from game.visual.animation_player import AnimationPlayer
 from game.visual.camera_controller import CameraController
 from game.visual.effects_manager import EffectsManager
 from game.visual.hud_renderer import HudRenderer
+from game.visual.lighting import LightingRenderer
 from game.visual.particle_system import ParticleSystem
 from game.visual.screen_effects import ScreenEffects
 from game.visual.skeleton import Skeleton
@@ -138,6 +139,15 @@ def test_reduced_flashes_disable_screen_flash() -> None:
     settings = SimpleNamespace(video=SimpleNamespace(flashes=True, reduced_flashes=True))
     effects.flash(100, settings)
     assert effects.flash_alpha == 0
+
+
+def test_lighting_overlay_preserves_scene_contrast() -> None:
+    pygame.init()
+    surface = pygame.Surface((32, 32))
+    surface.fill((10, 10, 10))
+    LightingRenderer().draw(surface, (255, 255, 255))
+    color = surface.get_at((0, 0))
+    assert color.r < 80 and color.g < 80 and color.b < 80
 
 
 def test_combat_renderer_is_headless_and_does_not_mutate_world() -> None:

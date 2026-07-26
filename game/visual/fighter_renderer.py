@@ -37,7 +37,9 @@ class FighterRenderer:
         state = self._state(snap.fighter_id)
         state.player.play(self.graph.clip_for_snapshot(visual, snap))
         state.player.update(1, hit_stop=hit_stop)
-        pose = state.player.sample(facing=snap.facing)
+        # Skeleton owns world-space mirroring. Applying facing in the animation
+        # clip as well mirrors local offsets twice and tears the silhouette apart.
+        pose = state.player.sample(facing=1)
         skeleton = build_skeleton(rig)
         origin = camera.world_to_screen(snap.x, snap.y)
         if getattr(getattr(settings, "video", settings), "shadows", True):
@@ -65,12 +67,49 @@ class FighterRenderer:
             rect.center = (int(transform.x), int(transform.y))
             pygame.draw.ellipse(surface, color, rect)
         elif transform.shape == "plate":
-            rect = pygame.Rect(0, 0, max(8, int(transform.length)), max(8, width))
-            rect.center = (int(transform.x), int(transform.y))
-            pygame.draw.rect(surface, color, rect, border_radius=4)
+            self._draw_plate(surface, transform, color)
+        elif transform.shape == "blade":
+            self._draw_blade(surface, transform, color)
+        elif transform.shape == "ribbon":
+            self._draw_ribbon(surface, transform, color)
         else:
             pygame.draw.line(surface, color, (int(transform.x), int(transform.y)), (int(end[0]), int(end[1])), width)
+            pygame.draw.circle(surface, color, (int(transform.x), int(transform.y)), max(2, width // 2))
             pygame.draw.circle(surface, color, (int(end[0]), int(end[1])), max(2, width // 2))
+
+    def _draw_plate(self, surface: pygame.Surface, transform, color) -> None:
+        angle = math.radians(transform.rotation - 90)
+        direction = pygame.Vector2(math.cos(angle), math.sin(angle))
+        normal = pygame.Vector2(-direction.y, direction.x)
+        center = pygame.Vector2(transform.x, transform.y)
+        half_length = max(4.0, transform.length * 0.5)
+        half_width = max(4.0, transform.thickness * 0.5)
+        points = [center - direction * half_length - normal * half_width,
+                  center + direction * half_length - normal * half_width,
+                  center + direction * half_length + normal * half_width,
+                  center - direction * half_length + normal * half_width]
+        pygame.draw.polygon(surface, color, [(int(point.x), int(point.y)) for point in points])
+
+    def _draw_blade(self, surface: pygame.Surface, transform, color) -> None:
+        angle = math.radians(transform.rotation - 90)
+        direction = pygame.Vector2(math.cos(angle), math.sin(angle))
+        normal = pygame.Vector2(-direction.y, direction.x)
+        start = pygame.Vector2(transform.x, transform.y)
+        base = start + direction * max(4.0, transform.length * 0.18)
+        tip = start + direction * transform.length
+        width = max(3.0, transform.thickness * 1.8)
+        points = [start - normal * width, start + normal * width, tip, base + normal * width * 0.35, base - normal * width * 0.35]
+        pygame.draw.polygon(surface, color, [(int(point.x), int(point.y)) for point in points])
+
+    def _draw_ribbon(self, surface: pygame.Surface, transform, color) -> None:
+        angle = math.radians(transform.rotation - 90)
+        direction = pygame.Vector2(math.cos(angle), math.sin(angle))
+        normal = pygame.Vector2(-direction.y, direction.x)
+        start = pygame.Vector2(transform.x, transform.y)
+        end = start + direction * transform.length
+        width = max(2.0, transform.thickness * 0.65)
+        points = [start - normal * width, start + normal * width, end + normal * width * 0.35, end, end - normal * width * 0.35]
+        pygame.draw.polygon(surface, color, [(int(point.x), int(point.y)) for point in points])
 
     def _draw_attack_flash(self, surface: pygame.Surface, origin: tuple[int, int], attack_id: str, facing: int, scale: float) -> None:
         seed = sum(ord(char) for char in attack_id)

@@ -124,13 +124,13 @@
     "achievement.fighters.description": "Используйте всех бойцов.",
     "achievement.training.name": "Практика",
     "achievement.training.description": "Проведите минуту в тренировке.",
-    "announcer.round": "?????",
-    "announcer.ready": "??????",
-    "announcer.fight": "???",
-    "announcer.ko": "??????",
-    "announcer.draw": "?????",
-    "announcer.double_ko": "??????? ??????",
-    "announcer.sudden_death": "???????? ???",
-    "announcer.victory": "??????"
+    "announcer.round": "РАУНД",
+    "announcer.ready": "ГОТОВЫ",
+    "announcer.fight": "БОЙ",
+    "announcer.ko": "НОКАУТ",
+    "announcer.draw": "НИЧЬЯ",
+    "announcer.double_ko": "ДВОЙНОЙ НОКАУТ",
+    "announcer.sudden_death": "РЕШАЮЩИЙ БОЙ",
+    "announcer.victory": "ПОБЕДА"
   }
 }
