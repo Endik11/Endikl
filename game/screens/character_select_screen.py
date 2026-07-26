@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pygame
+from pathlib import Path
 
 from ..enums import GameState, MatchMode, parse_match_mode
 from ..content_registry import get_default_registry
@@ -117,6 +118,28 @@ class CharacterSelectScreen(BaseScreen):
         session.player_one_fighter = self.p1_key
         session.player_two_fighter = self.p2_key
         session.selected_arena = None
+        session.controller_types = {"p1": "human", "p2": "human" if self.mode is MatchMode.LOCAL_VS else "training_dummy" if self.mode is MatchMode.TRAINING else "ai"}
+        seed = int(session.match_options.get("seed", 1))
+        if self.mode is MatchMode.ARCADE:
+            from ..modes.arcade_session import ArcadeSession
+            session.mode_session = ArcadeSession.create(self.p1_key, list(self._registry().fighters), seed, session.match_options.get("difficulty", "medium"))
+            session.player_two_fighter = session.mode_session.current_opponent
+        elif self.mode is MatchMode.STORY:
+            from ..modes.story_runner import StoryRegistry
+            from ..modes.story_session import StorySession
+            stories = StoryRegistry(Path(__file__).parents[2] / "data"); stories.load(set(self._registry().fighters)); story = stories.for_fighter(self.p1_key)
+            session.mode_session = StorySession(story.id, self.p1_key, story.start_node_id, seed)
+            battle = next(node for chapter in story.chapters for node in chapter.nodes if node.type == "battle")
+            session.player_two_fighter = battle.opponent_id
+        elif self.mode is MatchMode.TOURNAMENT:
+            from ..modes.tournament_session import TournamentSession
+            others = [key for key in self._registry().fighters if key != self.p1_key][:3]
+            session.mode_session = TournamentSession([self.p1_key, *others], self.p1_key, seed, True)
+            match = next(item for item in session.mode_session.matches if self.p1_key in {item.fighter_one, item.fighter_two})
+            session.player_two_fighter = match.fighter_two if match.fighter_one == self.p1_key else match.fighter_one
+        elif self.mode is MatchMode.TRAINING:
+            from ..modes.training_session import TrainingSession
+            session.mode_session = TrainingSession(self.p1_key, self.p2_key, self.context.saves.profile.selected_arena)
         self.context.saves.profile.selected_fighter = self.p1_key
         self.context.saves.save()
         self.context.audio.play_ui()

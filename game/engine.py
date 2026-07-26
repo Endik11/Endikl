@@ -22,6 +22,17 @@ from .screens.result_screen import ResultScreen
 from .screens.settings_screen import SettingsScreen
 from .screens.shop_screen import ShopScreen
 from .screens.stats_screen import StatsScreen
+from .screens.mode_select_screen import ModeSelectScreen
+from .screens.arcade_ladder_screen import ArcadeLadderScreen
+from .screens.story_select_screen import StorySelectScreen
+from .screens.story_screen import StoryScreen
+from .screens.dialogue_screen import DialogueScreen
+from .screens.tournament_screen import TournamentScreen
+from .screens.tournament_bracket_screen import TournamentBracketScreen
+from .screens.training_settings_screen import TrainingSettingsScreen
+from .statistics_manager import StatisticsManager
+from .reward_manager import RewardManager
+from .match_statistics import MatchStatistics
 from .session import GameSession
 from .settings import GAME_TITLE, SettingsManager
 from .state_manager import StateManager
@@ -42,6 +53,8 @@ class GameEngine:
             arena_keys=set(self.content.arenas),
         )
         self.profile = self.save_manager.load()
+        self.statistics = StatisticsManager(self.profile.statistics, self.profile.processed_result_ids)
+        self.rewards = RewardManager(self.profile.received_reward_ids, self.profile.processed_result_ids)
         self._repair_profile_content_ids()
         self.display = DisplayManager(self.settings)
         self.screen = self.display.create_display()
@@ -90,6 +103,15 @@ class GameEngine:
         self.running = False
 
     def _on_match_result(self) -> None:
+        result = self.session.last_match_result or {}
+        result_id = result.get("result_id")
+        if result_id:
+            outcome = "win" if result.get("result") == "PLAYER_1" else "loss" if result.get("result") == "PLAYER_2" else "draw"
+            stats = MatchStatistics.from_events(result_id, self.session.player_one_fighter or "", self.session.player_two_fighter or "", self.session.selected_arena or "", outcome, result.get("events", ()))
+            self.statistics.process(stats)
+            self.profile.statistics = dict(self.statistics.data)
+            self.profile.processed_result_ids = sorted(self.statistics.processed_result_ids | self.rewards.processed_result_ids)
+            self.save_manager.save()
         if self.state is GameState.FIGHT and not self.state_manager.has_pending_change:
             self.state_manager.request_change(GameState.RESULT)
 
@@ -106,6 +128,17 @@ class GameEngine:
     def _register_screens(self) -> None:
         screens = {
             GameState.MAIN_MENU: MainMenuScreen(self.screen_context),
+            GameState.MODE_SELECT: ModeSelectScreen(self.screen_context),
+            GameState.ARCADE_SELECT: ArcadeLadderScreen(self.screen_context),
+            GameState.ARCADE_LADDER: ArcadeLadderScreen(self.screen_context),
+            GameState.STORY_SELECT: StorySelectScreen(self.screen_context),
+            GameState.STORY_DIALOGUE: DialogueScreen(self.screen_context),
+            GameState.STORY_PROGRESS: StoryScreen(self.screen_context),
+            GameState.TOURNAMENT_SETUP: TournamentScreen(self.screen_context),
+            GameState.TOURNAMENT_BRACKET: TournamentBracketScreen(self.screen_context),
+            GameState.TRAINING_SETUP: TrainingSettingsScreen(self.screen_context),
+            GameState.TRAINING: FightScreen(self.screen_context),
+            GameState.MODE_RESULT: ResultScreen(self.screen_context),
             GameState.SETTINGS: SettingsScreen(context=self.screen_context),
             GameState.CHARACTER_SELECT: CharacterSelectScreen(context=self.screen_context),
             GameState.ARENA_SELECT: ArenaSelectScreen(self.profile.selected_arena, context=self.screen_context),

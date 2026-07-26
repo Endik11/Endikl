@@ -214,3 +214,29 @@ data, input history, damage state and deterministic match state respectively.
 Legacy `game/fighter.py` and `game/combos.py` remain for compatibility tools,
 but production constructs only `CombatFighter` and registry-backed commands.
 The obsolete `CallbackMatchRuntime` class has been removed.
+
+## Game modes and AI
+
+Every simulation frame is supplied by a controller. `HumanController` adapts the
+input manager, `AIController` reads only the current immutable `CombatSnapshot`
+and bounded `AIMemory`, and `TrainingDummyController` emits scripted or recorded
+`InputFrame` values. All controllers feed the same `CombatWorld`; none can alter
+fighters, damage, state, projectiles, or rendering directly. AI randomness is a
+private seeded generator and difficulty changes reaction, decisions, errors,
+defense judgement, combos and adaptation, never combat statistics.
+
+`GameSession.controller_types` records participant ownership and its
+`mode_session` references serializable mode state. `ArcadeSession` owns a seeded
+ladder, continues and escalating difficulty. `StorySession` and `StoryRegistry`
+run validated data-driven nodes. `TournamentSession` owns a 4/8 entrant bracket
+with stable match IDs. `TrainingSession` owns preferences and metrics while its
+reset service deliberately resets the existing world without recreating the
+renderer.
+
+Mode screens request typed `GameState` transitions through `StateManager`, then
+write fighter/controller choices into `GameSession`; only Arena Select starts
+`CombatMatchRuntime`. The runtime emits a stable result ID and accumulated
+combat events. `StatisticsManager` consumes those events, `RewardManager`
+applies unlocks or currency, and both reject processed IDs. `ProgressManager`
+serializes independent Arcade, Story, Tournament and Training state through the
+atomic, migrated profile save.

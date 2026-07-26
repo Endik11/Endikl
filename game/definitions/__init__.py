@@ -12,6 +12,7 @@ from .visual_definition import (
     HudDefinition,
     RigDefinition,
 )
+from .story_definition import (DialogueNodeDefinition, StoryChapterDefinition, StoryChoiceDefinition, StoryConditionDefinition, StoryDefinition, StoryNodeDefinition, StoryRewardDefinition)
 
 __all__ = [
     "ArenaDefinition",

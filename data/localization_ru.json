@@ -52,6 +52,22 @@
     "screen.opponent": "Соперник",
     "finish.shadow": "Теневой финал",
     "finish.final_strike": "Последний удар",
-    "content.error.load": "Не удалось загрузить игровые данные: {error}"
+    "content.error.load": "Не удалось загрузить игровые данные: {error}",
+    "mode.select.title": "Выбор режима",
+    "mode.local": "Локальный бой",
+    "mode.arcade": "Аркада",
+    "mode.story": "История",
+    "mode.tournament": "Турнир",
+    "mode.training": "Тренировка",
+    "story.dialogue": "Диалог",
+    "tournament.bracket": "Турнирная сетка",
+    "ai.difficulty.novice": "Новичок",
+    "ai.difficulty.easy": "Легко",
+    "ai.difficulty.medium": "Средне",
+    "ai.difficulty.hard": "Сложно",
+    "ai.difficulty.expert": "Эксперт",
+    "statistics.title": "Статистика",
+    "rewards.title": "Награды",
+    "mode.error.invalid": "Режим не может быть продолжен"
   }
 }

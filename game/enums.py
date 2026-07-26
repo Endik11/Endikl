@@ -19,11 +19,20 @@ class GameState(Enum):
     SHOP = auto()
     STATS = auto()
     ARCADE_LADDER = auto()
-    STORY = auto()
-    TOURNAMENT = auto()
-    TRAINING_SETTINGS = auto()
+    ARCADE_SELECT = auto()
+    STORY_SELECT = auto()
+    STORY_DIALOGUE = auto()
+    STORY_PROGRESS = auto()
+    TOURNAMENT_SETUP = auto()
+    TOURNAMENT_BRACKET = auto()
+    TRAINING_SETUP = auto()
+    TRAINING = auto()
+    MODE_RESULT = auto()
     CREDITS = auto()
     EXIT = auto()
+    STORY = STORY_PROGRESS
+    TOURNAMENT = TOURNAMENT_BRACKET
+    TRAINING_SETTINGS = TRAINING_SETUP
 
 
 class MatchMode(Enum):

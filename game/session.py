@@ -18,6 +18,7 @@ class GameSession:
     last_match_result: dict[str, Any] | None = None
     match_options: dict[str, Any] = field(default_factory=dict)
     controller_types: dict[str, str] = field(default_factory=lambda: {"p1": "human", "p2": "human"})
+    mode_session: Any | None = None
 
     def reset_character_selection(self) -> None:
         self.player_one_fighter = None
