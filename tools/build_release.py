@@ -33,7 +33,7 @@ def build_manifest(test_count: int = 0) -> dict[str, object]:
         "python_version": platform.python_version(),
         "pygame_version": pygame.version.ver,
         "commit": git_commit(),
-        "data_version": defaults.get("version", 1),
+        "data_version": defaults.get("content_version", 1),
         "save_version": SAVE_VERSION,
         "supported_platforms": ["windows-x64"],
         "asset_audit_status": "UNKNOWN assets excluded",

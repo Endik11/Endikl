@@ -115,7 +115,7 @@ _compatibility_shop_catalog = build_shop_catalog
 
 def build_shop_catalog() -> list[ShopItem]:
     catalog = Catalog.load(data_path("shop_catalog.json"))
-    strings = json.loads((root / "data/localization_ru.json").read_text(encoding="utf-8"))["strings"]
+    strings = json.loads(data_path("localization_ru.json").read_text(encoding="utf-8"))["strings"]
     items = []
     legacy_categories = {"palettes":"color","emblems":"misc","trails":"hit_effect","profile_frames":"theme","arena_variants":"arena","gallery_entries":"misc"}
     for item in catalog.items.values():
