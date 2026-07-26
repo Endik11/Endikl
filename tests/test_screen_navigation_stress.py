@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.slow
+
 from game.state_manager import StateManager
 from game.enums import GameState
 from game.screens.base_screen import BaseScreen

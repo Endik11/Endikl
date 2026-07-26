@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.slow
+
 from game.combat.combat_world import CombatWorld
 from game.combat.input_buffer import InputFrame
 from game.content_registry import get_default_registry
