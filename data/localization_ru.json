@@ -87,6 +87,7 @@
     "shop.purchase.success": "Предмет приобретён",
     "shop.purchase.insufficient": "Недостаточно очков",
     "profile.title": "Профиль",
-    "credits.title": "Авторы"
+    "credits.title": "Авторы",
+    "shop.item.ember.name":"Пепельная палитра","shop.item.ember.description":"Косметическая палитра с алыми акцентами.","shop.item.storm.name":"Штормовой след","shop.item.storm.description":"Бирюзовый визуальный след движения.","shop.item.emblem.name":"Эмблема границы","shop.item.emblem.description":"Знак для профиля игрока.","shop.item.frame.name":"Бронзовая рамка","shop.item.frame.description":"Косметическая рамка профиля.","shop.item.arena.name":"Ночной штормовой пирс","shop.item.arena.description":"Косметический вариант освещения арены.","shop.item.gallery.name":"Архивная галерея","shop.item.gallery.description":"Иллюстрация из истории архива."
   }
 }
