@@ -10,6 +10,14 @@ class ModeSelectScreen(BaseScreen):
     def __init__(self,context=None):super().__init__(context);self.selected=0;self.fonts=None;self.time=0
     def update(self,dt):
         self.time+=dt;pressed=self.context.input.pressed_for("p1")
+        for event in self._consume_events():
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                position = self.context.display.screen_to_virtual(event.pos)
+                for index in range(len(self.modes)):
+                    if pygame.Rect(90, 190 + index * 72, 560, 60).collidepoint(position):
+                        self.selected = index
+                        pressed = {**pressed, "light_punch": True}
+                        break
         if pressed.get("down"):self.selected=(self.selected+1)%len(self.modes)
         elif pressed.get("up"):self.selected=(self.selected-1)%len(self.modes)
         elif back_pressed(pressed):self.context.state_manager.go_back()
