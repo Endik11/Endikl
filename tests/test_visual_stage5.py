@@ -157,9 +157,14 @@ def test_verified_combat_renders_load_and_draw_over_procedural_fallback() -> Non
     renderer = FighterRenderer(content)
     kael = renderer._load_combat_render("kael")
     sable = renderer._load_combat_render("sable")
-    assert kael is not None and sable is not None
+    kael_attack = renderer._load_combat_render("kael", "attack")
+    sable_attack = renderer._load_combat_render("sable", "attack")
+    assert kael is not None and sable is not None and kael_attack is not None and sable_attack is not None
     assert kael.get_flags() & pygame.SRCALPHA
     assert sable.get_flags() & pygame.SRCALPHA
+    assert renderer._combat_render_mode(SimpleNamespace(state="ATTACK_ACTIVE", attack_id="light_punch")) == "attack"
+    assert renderer._combat_render_mode(SimpleNamespace(state="BLOCK_HIGH", attack_id="")) == "block"
+    assert renderer._combat_render_mode(SimpleNamespace(state="HIT_STUN", attack_id="")) == "hit"
     surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
     surface.fill((8, 10, 16, 255))
     world = CombatWorld(content, "kael", "sable", "neon_foundry")
