@@ -6,21 +6,29 @@ from .combat.input_buffer import InputFrame
 from .combat.simulation_clock import SimulationClock
 from .combat.enums import CombatEventType
 from .combat_renderer import CombatRenderer
+from .ai import AIController, AIProfile
+from .input_controllers import HumanController
 class CombatMatchRuntime:
     def __init__(self,registry,input_manager,audio,settings,on_match_result=None):
-        self.registry=registry;self.input=input_manager;self.audio=audio;self.settings=settings;self.on_match_result=on_match_result;self.world=None;self.clock=SimulationClock();self.renderer=CombatRenderer(registry,settings);self.renderer.clock=self.clock;self.paused=False;self.session=None;self._last_snapshot=None
+        self.registry=registry;self.input=input_manager;self.audio=audio;self.settings=settings;self.on_match_result=on_match_result;self.world=None;self.clock=SimulationClock();self.renderer=CombatRenderer(registry,settings);self.renderer.clock=self.clock;self.paused=False;self.session=None;self._last_snapshot=None;self.controllers={}
     @property
     def uses_legacy_fighter(self):return False
     def start_match(self,session):
         if not session.ready_for_match:raise ValueError("Incomplete match selection")
         self.registry.get_fighter(session.player_one_fighter);self.registry.get_fighter(session.player_two_fighter);self.registry.get_arena(session.selected_arena);self.session=session
-        seed=int(session.match_options.get("seed",1));self.world=CombatWorld(self.registry,session.player_one_fighter,session.player_two_fighter,session.selected_arena,seed,self.settings.gameplay.round_seconds,self.settings.gameplay.rounds_to_win);self.renderer.set_arena(session.selected_arena);self.clock.reset();self.paused=False;self._last_snapshot=self.world.snapshot()
+        seed=int(session.match_options.get("seed",1));self.world=CombatWorld(self.registry,session.player_one_fighter,session.player_two_fighter,session.selected_arena,seed,self.settings.gameplay.round_seconds,self.settings.gameplay.rounds_to_win);self.renderer.set_arena(session.selected_arena);self.clock.reset();self.paused=False;self._last_snapshot=self.world.snapshot();self.controllers=self._build_controllers(session,seed)
+    def _build_controllers(self,session,seed):
+        result={}
+        for index,(slot,fighter_id) in enumerate((("p1",session.player_one_fighter),("p2",session.player_two_fighter))):
+            kind=session.controller_types.get(slot,"human")
+            if kind=="ai":
+                fighter=self.registry.get_fighter(fighter_id);profile=AIProfile.from_dict(fighter_id,fighter.ai_profile);controller=AIController(profile,session.match_options.get("difficulty","medium"),fighter.attack_ids);controller.reset(seed+index);result[slot]=controller
+            else:result[slot]=HumanController(self.input,slot)
+        return result
     def handle_match_event(self,event):self.renderer.handle_event(event)
     def _frame(self,player):
-        if hasattr(self.input, "to_combat_frame"):
-            return self.input.to_combat_frame(player, self.world.frame_number if self.world else 0)
-        held=self.input.controls_for(player);pressed=self.input.pressed_for(player);number=self.world.frame_number if self.world else 0
-        kwargs={key:bool(held.get(key)) for key in ("left","right","up","down","light_punch","heavy_punch","light_kick","heavy_kick","block","throw")};kwargs["special"]=bool(held.get("energy"));kwargs["pressed"]=frozenset(k if k!="energy" else "special" for k,v in pressed.items() if v);kwargs["held"]=frozenset(k if k!="energy" else "special" for k,v in held.items() if v);kwargs["frame_number"]=number;return InputFrame(**kwargs)
+        number=self.world.frame_number if self.world else 0;snapshot=self.world.snapshot();fighter_id=self.world.fighter_one.fighter_id if player=="p1" else self.world.fighter_two.fighter_id
+        return self.controllers[player].build_input(snapshot,fighter_id,number)
     def update_match(self,dt):
         if not self.world or self.paused:return
         self.renderer.render_fps=1/dt if dt>0 else 0

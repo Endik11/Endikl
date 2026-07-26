@@ -17,6 +17,7 @@ class GameSession:
     tournament_progress: int = 0
     last_match_result: dict[str, Any] | None = None
     match_options: dict[str, Any] = field(default_factory=dict)
+    controller_types: dict[str, str] = field(default_factory=lambda: {"p1": "human", "p2": "human"})
 
     def reset_character_selection(self) -> None:
         self.player_one_fighter = None
@@ -34,6 +35,7 @@ class GameSession:
         self.player_one_fighter = player_one
         self.player_two_fighter = player_two
         self.selected_arena = None
+        self.controller_types = {"p1": "human", "p2": "human"}
         self.clear_transient_match_data()
 
     def clear_transient_match_data(self) -> None:
