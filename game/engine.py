@@ -7,7 +7,7 @@ from .combat_match_runtime import CombatMatchRuntime
 from .content_registry import get_default_registry
 from .debug import configure_logging, log_critical, log_event, log_runtime_info, shutdown_logging
 from .display_manager import DisplayManager
-from .enums import GameState
+from .enums import GameState, MatchMode
 from .input_manager import InputManager
 from .resources import inspect_optional_assets
 from .save import SaveManager
@@ -33,6 +33,11 @@ from .screens.training_settings_screen import TrainingSettingsScreen
 from .statistics_manager import StatisticsManager
 from .reward_manager import RewardManager
 from .match_statistics import MatchStatistics
+from .progress_manager import ProgressManager
+from .modes.arcade_session import ArcadeSession
+from .modes.story_session import StorySession
+from .modes.tournament_session import TournamentSession
+from .modes.training_session import TrainingSession
 from .session import GameSession
 from .settings import GAME_TITLE, SettingsManager
 from .state_manager import StateManager
@@ -55,6 +60,7 @@ class GameEngine:
         self.profile = self.save_manager.load()
         self.statistics = StatisticsManager(self.profile.statistics, self.profile.processed_result_ids)
         self.rewards = RewardManager(self.profile.received_reward_ids, self.profile.processed_result_ids)
+        self.progress = ProgressManager(self.profile)
         self._repair_profile_content_ids()
         self.display = DisplayManager(self.settings)
         self.screen = self.display.create_display()
@@ -109,11 +115,43 @@ class GameEngine:
             outcome = "win" if result.get("result") == "PLAYER_1" else "loss" if result.get("result") == "PLAYER_2" else "draw"
             stats = MatchStatistics.from_events(result_id, self.session.player_one_fighter or "", self.session.player_two_fighter or "", self.session.selected_arena or "", outcome, result.get("events", ()))
             self.statistics.process(stats)
+            self._advance_mode_result(result_id, outcome == "win")
             self.profile.statistics = dict(self.statistics.data)
             self.profile.processed_result_ids = sorted(self.statistics.processed_result_ids | self.rewards.processed_result_ids)
+            self.profile.received_reward_ids = sorted(self.rewards.received_reward_ids)
             self.save_manager.save()
         if self.state is GameState.FIGHT and not self.state_manager.has_pending_change:
             self.state_manager.request_change(GameState.RESULT)
+
+    def _advance_mode_result(self, result_id: str, won: bool) -> None:
+        mode = self.session.selected_mode
+        active = self.session.mode_session
+        if mode is MatchMode.ARCADE and isinstance(active, ArcadeSession):
+            if active.record_result(result_id, won):
+                self.progress.store_arcade(active)
+                if active.completed:
+                    self.rewards.grant("arcade_complete", result_id, self.profile, "currency", 500)
+                    self.statistics.mode_complete("arcade")
+                elif won:
+                    self.session.player_two_fighter = active.current_opponent
+                    self.session.match_options["difficulty"] = active.current_difficulty
+        elif mode is MatchMode.TOURNAMENT and isinstance(active, TournamentSession):
+            match = next((item for item in active.matches if not item.winner and self.session.player_one_fighter in {item.fighter_one, item.fighter_two}), None)
+            if match is not None:
+                winner = self.session.player_one_fighter if won else self.session.player_two_fighter
+                active.record_result(match.id, result_id, winner)
+                self.progress.store_tournament(active)
+                if active.completed and active.champion == active.player_id:
+                    self.rewards.grant("tournament_win", result_id, self.profile, "currency", 400)
+                    self.statistics.mode_complete("tournament")
+        elif mode is MatchMode.STORY and isinstance(active, StorySession):
+            from pathlib import Path
+            from .modes.story_runner import StoryRegistry
+            stories = StoryRegistry(Path(__file__).parents[1] / "data"); stories.load(set(self.content.fighters)); story = stories.stories[active.story_id]
+            if active.node(story).type == "battle" and active.record_battle(story, result_id, won):
+                self.progress.store_story(active)
+        elif mode is MatchMode.TRAINING and isinstance(active, TrainingSession):
+            self.progress.store_training(active)
 
     def _repair_profile_content_ids(self) -> None:
         fighters = list(self.content.fighters)

@@ -4,6 +4,8 @@ from game.content_registry import get_default_registry
 from game.enums import GameState,MatchMode
 from game.session import GameSession
 from types import SimpleNamespace
+from game.reward_manager import RewardManager
+from game.save import ProfileData
 
 
 class Input:
@@ -21,3 +23,8 @@ def test_production_runtime_builds_new_ai_controller():
 
 def test_stage6_states_are_typed_and_distinct():
     assert GameState.ARCADE_LADDER is not GameState.STORY_PROGRESS and GameState.STORY_PROGRESS is not GameState.TOURNAMENT_BRACKET
+
+
+def test_result_reward_cannot_be_reissued_by_reopening_result():
+    profile=ProfileData();manager=RewardManager();assert manager.grant("arcade_complete","stable-result",profile,"currency",500)
+    assert not manager.grant("arcade_complete","stable-result",profile,"currency",500) and profile.currency==500

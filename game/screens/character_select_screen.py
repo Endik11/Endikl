@@ -129,6 +129,7 @@ class CharacterSelectScreen(BaseScreen):
             from ..modes.story_session import StorySession
             stories = StoryRegistry(Path(__file__).parents[2] / "data"); stories.load(set(self._registry().fighters)); story = stories.for_fighter(self.p1_key)
             session.mode_session = StorySession(story.id, self.p1_key, story.start_node_id, seed)
+            session.mode_session.advance(story)
             battle = next(node for chapter in story.chapters for node in chapter.nodes if node.type == "battle")
             session.player_two_fighter = battle.opponent_id
         elif self.mode is MatchMode.TOURNAMENT:
