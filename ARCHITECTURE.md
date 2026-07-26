@@ -240,3 +240,24 @@ combat events. `StatisticsManager` consumes those events, `RewardManager`
 applies unlocks or currency, and both reject processed IDs. `ProgressManager`
 serializes independent Arcade, Story, Tournament and Training state through the
 atomic, migrated profile save.
+
+## UX, accessibility and progression
+
+`game/ui` owns shared widget state, focus, semantic navigation, modal focus
+trapping, scrolling, tooltips and bounded toast queues in virtual coordinates.
+Disabled or hidden widgets are skipped and focus is remembered per screen.
+`UITheme.accessible` applies high contrast, large text and reduced transition
+motion; combat camera and screen effects retain reduced-motion/flash paths.
+
+`game/controls` owns validated keyboard, gamepad-button and axis profiles.
+Rebinding classifies conflicts and atomically swaps bindings only when required
+actions remain present. Device removal is surfaced by `InputManager`; the engine
+pauses an active match without destroying its `CombatWorld`. Rumble is optional
+and failure-safe.
+
+RU and EN catalogs share keys and placeholders with RU fallback. The cosmetic
+economy validates catalog requirements and rolls wallet/inventory back around a
+failed save. Achievements consume event-derived statistics and issue unique
+rewards once. Profile format 4 separates progress, statistics, economy,
+achievements and cosmetics; atomic writes maintain backups, corrupt inputs are
+preserved and newer profile versions are opened read-only.

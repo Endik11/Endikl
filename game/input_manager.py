@@ -21,6 +21,7 @@ class InputManager:
             "p2": {command: False for command in COMMANDS},
         }
         self.joysticks: list[pygame.joystick.Joystick] = []
+        self.controller_disconnected = False
         pygame.joystick.init()
         self.refresh_joysticks()
 
@@ -38,6 +39,7 @@ class InputManager:
             if event.type == pygame.QUIT:
                 quit_requested = True
             elif event.type in (pygame.JOYDEVICEADDED, pygame.JOYDEVICEREMOVED):
+                if event.type == pygame.JOYDEVICEREMOVED:self.controller_disconnected = True
                 self.refresh_joysticks()
 
         keys = pygame.key.get_pressed()
@@ -63,6 +65,9 @@ class InputManager:
             for player in ("p1", "p2")
         }
         return self.controls, self.pressed, quit_requested, events
+
+    def consume_controller_disconnect(self) -> bool:
+        value=self.controller_disconnected;self.controller_disconnected=False;return value
 
     def pressed_for(self, player: str) -> dict[str, bool]:
         return self.pressed[player]

@@ -24,6 +24,7 @@ from .screens.shop_screen import ShopScreen
 from .screens.stats_screen import StatsScreen
 from .screens.profile_screen import ProfileScreen
 from .screens.credits_screen import CreditsScreen
+from .screens.controls_screen import ControlsScreen
 from .screens.mode_select_screen import ModeSelectScreen
 from .screens.arcade_ladder_screen import ArcadeLadderScreen
 from .screens.story_select_screen import StorySelectScreen
@@ -190,6 +191,7 @@ class GameEngine:
             GameState.MODE_RESULT: ResultScreen(self.screen_context),
             GameState.PROFILE: ProfileScreen(context=self.screen_context),
             GameState.CREDITS: CreditsScreen(context=self.screen_context),
+            GameState.CONTROLS: ControlsScreen(context=self.screen_context),
             GameState.SETTINGS: SettingsScreen(context=self.screen_context),
             GameState.CHARACTER_SELECT: CharacterSelectScreen(context=self.screen_context),
             GameState.ARENA_SELECT: ArenaSelectScreen(self.profile.selected_arena, context=self.screen_context),
@@ -219,6 +221,8 @@ class GameEngine:
             while self.running:
                 dt = min(self.clock.tick(self.settings.video.fps_limit) / 1000.0, 0.25)
                 _, _, quit_requested, events = self.input.poll()
+                if self.input.consume_controller_disconnect() and self.state is GameState.FIGHT and not self.state_manager.has_pending_change:
+                    self.match_runtime.pause_match();self.state_manager.request_change(GameState.PAUSE)
                 if quit_requested:
                     self.running = False
                 for event in events:

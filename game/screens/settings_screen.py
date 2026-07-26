@@ -5,6 +5,7 @@ from typing import Callable
 import pygame
 
 from ..settings import COLORS, DEFAULT_KEYBOARD, FPS_OPTIONS
+from ..enums import GameState
 from .base_screen import BaseScreen
 from .ui_helpers import accept_pressed, back_pressed, draw_background, draw_text
 
@@ -144,7 +145,11 @@ class SettingsScreen(BaseScreen):
         ]
 
     def _control_rows(self) -> list[Row]:
-        return [("Сброс управления", lambda: "Готово", self._reset_controls), ("Назад", lambda: "", lambda direction: None)]
+        return [("Переназначить", lambda: "", self._open_controls), ("Сброс управления", lambda: "Готово", self._reset_controls), ("Назад", lambda: "", lambda direction: None)]
+
+    def _open_controls(self, direction: int) -> None:
+        if self.context is not None and not self.context.state_manager.has_pending_change:
+            self.context.state_manager.request_change(GameState.CONTROLS)
 
     def _back_row(self) -> list[Row]:
         return [("Назад", lambda: "", lambda direction: None)]
