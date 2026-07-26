@@ -7,6 +7,7 @@ import pygame
 from .animation_clip import AnimationClip
 from .animation_graph import AnimationGraph
 from .animation_player import AnimationPlayer
+from .character_art import CharacterArtRenderer
 from .fighter_visual import FighterVisualState
 from ..platform_paths import asset_path
 from .pose import BonePose, Pose
@@ -28,6 +29,7 @@ class FighterRenderer:
         self.registry = registry
         self.graph = AnimationGraph()
         self.shadow = ShadowRenderer()
+        self.character_art = CharacterArtRenderer()
         self.states: dict[str, FighterVisualState] = {}
         self.combat_renders: dict[tuple[str, str], pygame.Surface | None] = {}
         self.combat_render_variants: dict[tuple[str, str, int], pygame.Surface] = {}
@@ -58,7 +60,7 @@ class FighterRenderer:
         skeleton = build_skeleton(rig)
         if self.USE_STICKMAN_COMBAT:
             transforms = sorted(skeleton.world_transforms(pose, origin, snap.facing, visual.scale).values(), key=lambda item: item.draw_order)
-            self._draw_stickman(surface, transforms, visual, snap, origin[1])
+            self.character_art.draw(surface, transforms, visual, snap, origin[1])
             if snap.attack_id:
                 self._draw_attack_flash(surface, origin, snap.attack_id, snap.facing, visual.scale)
             self._draw_combat_state_effect(surface, snap, origin, state, render_mode)

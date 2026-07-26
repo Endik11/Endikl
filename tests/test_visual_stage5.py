@@ -181,6 +181,20 @@ def test_verified_combat_renders_load_and_draw_over_procedural_fallback() -> Non
     assert surface.get_at((350, 405)).a > 0
 
 
+def test_character_art_handles_every_content_fighter() -> None:
+    pygame.init()
+    content = registry()
+    renderer = FighterRenderer(content)
+    camera = CameraController(x=640, y=584, zoom=1.0)
+    for fighter_id in content.fighter_visuals:
+        opponent = "sable" if fighter_id != "sable" else "kael"
+        world = CombatWorld(content, fighter_id, opponent, "neon_foundry")
+        surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+        surface.fill((0, 0, 0, 0))
+        renderer.draw(surface, world.snapshot(), camera)
+        assert surface.get_bounding_rect().width > 0
+
+
 def test_combat_renderer_is_headless_and_does_not_mutate_world() -> None:
     pygame.init()
     content = registry()
