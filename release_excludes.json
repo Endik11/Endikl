@@ -1,0 +1,12 @@
+{
+  "unknown_assets": [
+    "assets/arenas/li_river_guilin.jpg",
+    "assets/arenas/zhangjiajie_forest.jpg",
+    "assets/fighters/kael_sheet.png",
+    "assets/fighters/mira_sheet.png",
+    "assets/fighters/orrin_sheet.png",
+    "assets/fighters/sable_sheet.png"
+  ],
+  "directories": ["saves", "logs", "crashes", "tests", ".git", ".pytest_cache", "__pycache__"],
+  "patterns": ["*.bak", "*.tmp", "*.log"]
+}
