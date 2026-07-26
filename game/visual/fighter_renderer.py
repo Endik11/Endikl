@@ -48,6 +48,8 @@ class FighterRenderer:
                 continue
             color = visual.palette_roles.get(transform.palette_role, visual.palette_roles.get("primary", (220, 220, 220)))
             self._draw_bone(surface, transform, color)
+        if snap.attack_id:
+            self._draw_attack_flash(surface, origin, snap.attack_id, snap.facing, visual.scale)
 
     def _draw_bone(self, surface: pygame.Surface, transform, color) -> None:
         if transform.thickness <= 0 and transform.length <= 0:
@@ -69,3 +71,13 @@ class FighterRenderer:
         else:
             pygame.draw.line(surface, color, (int(transform.x), int(transform.y)), (int(end[0]), int(end[1])), width)
             pygame.draw.circle(surface, color, (int(end[0]), int(end[1])), max(2, width // 2))
+
+    def _draw_attack_flash(self, surface: pygame.Surface, origin: tuple[int, int], attack_id: str, facing: int, scale: float) -> None:
+        seed = sum(ord(char) for char in attack_id)
+        color = (120 + seed % 120, 80 + (seed * 3) % 150, 100 + (seed * 7) % 140)
+        reach = int((58 + seed % 42) * scale)
+        height = int((24 + seed % 18) * scale)
+        center = (origin[0] + facing * reach, origin[1] - int(122 * scale))
+        rect = pygame.Rect(0, 0, reach, height)
+        rect.center = center
+        pygame.draw.arc(surface, color, rect, -0.9 if facing > 0 else 2.2, 0.9 if facing > 0 else 4.1, max(3, int(5 * scale)))
