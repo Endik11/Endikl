@@ -1,0 +1,8 @@
+{
+  "content_version": 2,
+  "default_fighter": "kael",
+  "default_opponent": "sable",
+  "default_arena": "neon_foundry",
+  "timing_frames_per_second": 60,
+  "missing_artwork_policy": "procedural_fallback"
+}

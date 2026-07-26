@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Combos","type":"object","required":["combos"],"properties":{"combos":{"type":"array","items":{"type":"object","required":["id","owner_id","display_name_key","inputs","max_gap_frames","required_state","resulting_attack_id","meter_cost","enabled"]}}}}

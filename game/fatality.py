@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+# Compatibility module name retained for Stage 3; a later stage may rename the
+# internal module after downstream imports and persisted counters are migrated.
+
 from dataclasses import dataclass
 
 import pygame
@@ -53,13 +56,13 @@ def detect_finisher(
     """Small original finisher rules for the prototype."""
     near_edge = loser.pos.x < stage_left + 95 or loser.pos.x > stage_right - 95
     if near_edge and pressed.get("heavy_kick") and pressed.get("energy"):
-        return "stage"
+        return "stage_finish"
     if pressed.get("down") and pressed.get("heavy_punch") and winner.energy >= 300:
         winner.energy -= 300
-        return "fatality"
+        return "shadow_finish"
     if pressed.get("heavy_punch") and pressed.get("heavy_kick") and winner.energy >= 500:
         winner.energy -= 500
-        return "brutality"
+        return "final_strike"
     return None
 
 
@@ -74,15 +77,15 @@ def draw_finisher_overlay(
 
     if state.chosen is None:
         text = "ЗАВЕРШИ ИХ"
-        sub = "Вниз + Сильный удар: Фаталити   Энергия + Сильный удар у края: Сцена"
-    elif state.chosen == "fatality":
-        text = "ФАТАЛИТИ"
+        sub = "Вниз + сильный удар: Теневой финал   Энергия + сильный удар у края: Финал арены"
+    elif state.chosen == "shadow_finish":
+        text = "ТЕНЕВОЙ ФИНАЛ"
         sub = "Поединок завершается кинематографическим всплеском тени."
-    elif state.chosen == "brutality":
-        text = "БРУТАЛИТИ"
+    elif state.chosen == "final_strike":
+        text = "ПОСЛЕДНИЙ УДАР"
         sub = "Последний сверхудар разносит раунд в щепки."
-    elif state.chosen == "stage":
-        text = "ФАТАЛИТИ СО СЦЕНЫ"
+    elif state.chosen == "stage_finish":
+        text = "ФИНАЛ АРЕНЫ"
         sub = "Сама арена забирает поверженного бойца."
     else:
         text = "ПОБЕДА"
@@ -92,4 +95,3 @@ def draw_finisher_overlay(
     surface.blit(label, label.get_rect(center=(surface.get_width() // 2, 165)))
     hint = font_small.render(sub, True, (238, 241, 244))
     surface.blit(hint, hint.get_rect(center=(surface.get_width() // 2, 215)))
-

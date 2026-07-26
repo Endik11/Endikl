@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
 import pygame
+
+from .debug import log_warning
+from .json_io import read_json_object, write_json_atomic
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -164,48 +166,77 @@ class SettingsManager:
         self.settings = GameSettings()
 
     def load(self) -> GameSettings:
-        if not self.path.exists():
+        data = read_json_object(self.path, "settings")
+        if data is None:
             self.save()
             return self.settings
-
-        try:
-            data = json.loads(self.path.read_text(encoding="utf-8"))
-            self.settings = self._from_dict(data)
-        except (OSError, json.JSONDecodeError, TypeError, ValueError):
-            self.settings = GameSettings()
-            self.save()
+        self.settings = self._from_dict(data)
         return self.settings
 
     def save(self) -> None:
-        SAVE_DIR.mkdir(parents=True, exist_ok=True)
-        try:
-            self.path.write_text(
-                json.dumps(asdict(self.settings), indent=2, ensure_ascii=False),
-                encoding="utf-8",
-            )
-        except OSError:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(
-                json.dumps(asdict(self.settings), indent=2, ensure_ascii=False),
-                encoding="utf-8",
-            )
+        write_json_atomic(self.path, asdict(self.settings), "settings")
 
     def _from_dict(self, data: dict[str, Any]) -> GameSettings:
         base = GameSettings()
-        video_data = data.get("video", {})
-        audio_data = data.get("audio", {})
-        video = VideoSettings(**{**asdict(base.video), **video_data})
-        audio = AudioSettings(**{**asdict(base.audio), **audio_data})
-        gameplay = GameplaySettings(
-            **{**asdict(base.gameplay), **data.get("gameplay", {})}
+        video_data = _object(data.get("video"))
+        audio_data = _object(data.get("audio"))
+        gameplay_data = _object(data.get("gameplay"))
+        video = VideoSettings(
+            width=_resolution_dimension(video_data.get("width"), base.video.width),
+            height=_resolution_dimension(video_data.get("height"), base.video.height),
+            fullscreen=_boolean(video_data.get("fullscreen"), base.video.fullscreen),
+            display_mode=_choice(
+                video_data.get("display_mode"),
+                base.video.display_mode,
+                {"windowed", "fullscreen"},
+            ),
+            camera_shake=_boolean(video_data.get("camera_shake"), base.video.camera_shake),
+            particles=_boolean(video_data.get("particles"), base.video.particles),
+            fps_limit=_choice_int(video_data.get("fps_limit"), base.video.fps_limit, set(FPS_OPTIONS)),
+            ui_scale=_bounded_float(video_data.get("ui_scale"), base.video.ui_scale, 0.75, 2.0),
         )
-        controls_data = data.get("controls", {})
+        audio = AudioSettings(
+            master_volume=_bounded_float(audio_data.get("master_volume"), base.audio.master_volume, 0.0, 1.0),
+            music_volume=_bounded_float(audio_data.get("music_volume"), base.audio.music_volume, 0.0, 1.0),
+            sfx_volume=_bounded_float(audio_data.get("sfx_volume"), base.audio.sfx_volume, 0.0, 1.0),
+            interface_volume=_bounded_float(
+                audio_data.get("interface_volume"),
+                base.audio.interface_volume,
+                0.0,
+                1.0,
+            ),
+            mute=_boolean(audio_data.get("mute"), base.audio.mute),
+        )
+        gameplay = GameplaySettings(
+            difficulty=_choice(
+                gameplay_data.get("difficulty"),
+                base.gameplay.difficulty,
+                {"easy", "normal", "hard"},
+            ),
+            rounds_to_win=_bounded_int(
+                gameplay_data.get("rounds_to_win"),
+                base.gameplay.rounds_to_win,
+                1,
+                5,
+            ),
+            round_seconds=_bounded_int(
+                gameplay_data.get("round_seconds"),
+                base.gameplay.round_seconds,
+                10,
+                999,
+            ),
+            training_infinite_energy=_boolean(
+                gameplay_data.get("training_infinite_energy"),
+                base.gameplay.training_infinite_energy,
+            ),
+        )
+        controls_data = _object(data.get("controls"))
+        keyboard_data = _object(controls_data.get("keyboard"))
         keyboard = {
             player: {
-                command: int(
-                    controls_data.get("keyboard", {})
-                    .get(player, {})
-                    .get(command, DEFAULT_KEYBOARD[player][command])
+                command: _pygame_key(
+                    _object(keyboard_data.get(player)).get(command),
+                    DEFAULT_KEYBOARD[player][command],
                 )
                 for command in COMMANDS
             }
@@ -213,7 +244,10 @@ class SettingsManager:
         }
         controls = ControlSettings(
             keyboard=keyboard,
-            gamepad_enabled=bool(controls_data.get("gamepad_enabled", True)),
+            gamepad_enabled=_boolean(
+                controls_data.get("gamepad_enabled"),
+                base.controls.gamepad_enabled,
+            ),
         )
         return GameSettings(video=video, audio=audio, gameplay=gameplay, controls=controls)
 
@@ -221,3 +255,56 @@ class SettingsManager:
 def clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
+
+def _object(value: object) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _boolean(value: object, default: bool) -> bool:
+    return value if isinstance(value, bool) else default
+
+
+def _choice(value: object, default: str, allowed: set[str]) -> str:
+    return value if isinstance(value, str) and value in allowed else default
+
+
+def _bounded_int(value: object, default: int, low: int, high: int) -> int:
+    if isinstance(value, bool):
+        return default
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+    return max(low, min(high, parsed))
+
+
+def _resolution_dimension(value: object, default: int) -> int:
+    if isinstance(value, bool):
+        return default
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+    return parsed if 640 <= parsed <= 7680 else default
+
+
+def _choice_int(value: object, default: int, allowed: set[int]) -> int:
+    parsed = _bounded_int(value, default, min(allowed), max(allowed))
+    return parsed if parsed in allowed else default
+
+
+def _pygame_key(value: object, default: int) -> int:
+    return _bounded_int(value, default, 0, 2**31 - 1)
+
+
+def _bounded_float(value: object, default: float, low: float, high: float) -> float:
+    if isinstance(value, bool):
+        return default
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+    if parsed != parsed:
+        log_warning("Ignoring NaN setting value")
+        return default
+    return max(low, min(high, parsed))

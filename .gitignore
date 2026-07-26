@@ -1,5 +1,6 @@
 __pycache__/
+.pytest_cache/
+.test-deps/
 *.py[cod]
 saves/
 fighter_preview.png
-

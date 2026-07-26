@@ -1,0 +1,10 @@
+{
+  "data_version": 2,
+  "simulation_fps": 60,
+  "combos": [
+    {"id":"thunder_boundary_combo","owner_id":"common","display_name_key":"combo.thunder_boundary.name","inputs":["down","forward","light_punch"],"command":{"inputs":[{"direction":"down"},{"direction":"forward"},{"button":"light_punch"}],"max_gap_frames":4},"max_gap_frames":45,"required_state":"any","resulting_attack_id":"thunder_boundary","meter_cost":180,"enabled":true,"priority":0},
+    {"id":"bronze_sky_break_combo","owner_id":"common","display_name_key":"combo.bronze_sky_break.name","inputs":["back","down","forward","heavy_punch"],"command":{"inputs":[{"direction":"back"},{"direction":"down"},{"direction":"forward"},{"button":"heavy_punch"}],"max_gap_frames":6},"max_gap_frames":57,"required_state":"ground","resulting_attack_id":"bronze_sky_break","meter_cost":300,"enabled":true,"priority":10},
+    {"id":"rune_shift_combo","owner_id":"common","display_name_key":"combo.rune_shift.name","inputs":["down","back","light_kick"],"command":{"inputs":[{"direction":"down"},{"direction":"back"},{"button":"light_kick"}],"max_gap_frames":5},"max_gap_frames":45,"required_state":"ground","resulting_attack_id":"rune_shift","meter_cost":160,"enabled":true,"priority":0},
+    {"id":"storm_limit_verdict_combo","owner_id":"common","display_name_key":"combo.storm_limit_verdict.name","inputs":["energy","heavy_punch","heavy_kick"],"command":{"inputs":[{"button":"special"},{"button":"heavy_punch"},{"button":"heavy_kick"}],"max_gap_frames":3},"max_gap_frames":30,"required_state":"any","resulting_attack_id":"storm_limit_verdict","meter_cost":1000,"enabled":true,"priority":20}
+  ]
+}
