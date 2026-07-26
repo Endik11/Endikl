@@ -68,6 +68,25 @@
     "ai.difficulty.expert": "Эксперт",
     "statistics.title": "Статистика",
     "rewards.title": "Награды",
-    "mode.error.invalid": "Режим не может быть продолжен"
+    "mode.error.invalid": "Режим не может быть продолжен",
+    "story.choice.seal": "Запечатать архив",
+    "story.choice.open": "Открыть архив",
+    "story.choice.guard": "Остаться на страже",
+    "story.choice.pursue": "Продолжить погоню",
+    "story.choice.mercy": "Проявить милосердие",
+    "story.choice.resolve": "Сохранить решимость",
+    "story.narrator": "Рассказчик",
+    "story.ren.intro": "Грозовой архив пробудился у границы.",
+    "story.kael.intro": "Клятва пепельной стражи снова призывает Каэля.",
+    "story.fallback.intro": "На рассвете начинается новое испытание.",
+    "ui.back": "Назад",
+    "ui.confirm": "Подтвердить",
+    "ui.cancel": "Отмена",
+    "shop.title": "Магазин",
+    "shop.balance": "Очки: {amount}",
+    "shop.purchase.success": "Предмет приобретён",
+    "shop.purchase.insufficient": "Недостаточно очков",
+    "profile.title": "Профиль",
+    "credits.title": "Авторы"
   }
 }
