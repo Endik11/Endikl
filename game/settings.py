@@ -8,14 +8,17 @@ import pygame
 
 from .debug import log_warning
 from .json_io import read_json_object, write_json_atomic
+from .platform_paths import SOURCE_ROOT, asset_path
+from .user_data_manager import get_user_data_manager
+from .version import GAME_NAME
 
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT_DIR / "assets"
-SAVE_DIR = ROOT_DIR / "saves"
-SETTINGS_FILE = SAVE_DIR / "settings.json"
+ROOT_DIR = SOURCE_ROOT
+ASSET_DIR = asset_path()
+SAVE_DIR = get_user_data_manager().paths.saves
+SETTINGS_FILE = get_user_data_manager().paths.settings
 
-GAME_TITLE = "Mortal End: Наследие"
+GAME_TITLE = GAME_NAME
 VIRTUAL_WIDTH = 1280
 VIRTUAL_HEIGHT = 720
 FPS = 60

@@ -46,12 +46,17 @@ from .modes.training_session import TrainingSession
 from .session import GameSession
 from .settings import GAME_TITLE, SettingsManager
 from .state_manager import StateManager
+from .platform_paths import data_path
+from .user_data_manager import get_user_data_manager
 
 
 class GameEngine:
     """Composition root; combat rules live exclusively in CombatWorld/runtime."""
 
     def __init__(self) -> None:
+        user_data = get_user_data_manager()
+        user_data.ensure()
+        user_data.migrate_legacy_saves()
         configure_logging()
         pygame.init()
         pygame.display.set_caption(GAME_TITLE)
@@ -66,7 +71,7 @@ class GameEngine:
         self.statistics = StatisticsManager(self.profile.statistics, self.profile.processed_result_ids)
         self.rewards = RewardManager(self.profile.received_reward_ids, self.profile.processed_result_ids)
         self.progress = ProgressManager(self.profile)
-        self.achievement_registry = AchievementRegistry.load(Path(__file__).parents[1] / "data/achievements.json")
+        self.achievement_registry = AchievementRegistry.load(data_path("achievements.json"))
         self.achievements = AchievementManager(self.achievement_registry, getattr(self.profile, "achievement_progress", {}), getattr(self.profile, "unlocked_achievements", []), getattr(self.profile, "processed_achievement_events", []))
         self._repair_profile_content_ids()
         self.display = DisplayManager(self.settings)
@@ -159,7 +164,7 @@ class GameEngine:
         elif mode is MatchMode.STORY and isinstance(active, StorySession):
             from pathlib import Path
             from .modes.story_runner import StoryRegistry
-            stories = StoryRegistry(Path(__file__).parents[1] / "data"); stories.load(set(self.content.fighters)); story = stories.stories[active.story_id]
+            stories = StoryRegistry(data_path()); stories.load(set(self.content.fighters)); story = stories.stories[active.story_id]
             if active.node(story).type == "battle" and active.record_battle(story, result_id, won):
                 self.progress.store_story(active)
         elif mode is MatchMode.TRAINING and isinstance(active, TrainingSession):

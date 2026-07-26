@@ -30,6 +30,7 @@ from .fallback_content import (
 )
 from .localization import LocalizationManager
 from .settings import MAX_ENERGY, ROOT_DIR
+from .platform_paths import data_path
 
 
 ID_PATTERN = re.compile(r"^[a-z0-9_]+$")
@@ -41,7 +42,7 @@ PROCEDURAL_STYLES = {"foundry", "pier", "court", "wall", "mountains", "pagoda"}
 
 class ContentRegistry:
     def __init__(self, data_dir: Path | None = None, *, allow_fallback: bool = True) -> None:
-        self.data_dir = Path(data_dir or ROOT_DIR / "data")
+        self.data_dir = Path(data_dir or data_path())
         self.allow_fallback = allow_fallback
         self.fighters: dict[str, FighterDefinition] = {}
         self.attacks: dict[str, AttackDefinition] = {}

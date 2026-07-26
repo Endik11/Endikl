@@ -7,11 +7,13 @@ from pathlib import Path
 
 import pygame
 
+from .user_data_manager import get_user_data_manager
+from .version import VERSION
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-LOG_PATH = ROOT_DIR / "saves" / "game.log"
+
+LOG_PATH = get_user_data_manager().paths.logs / "game.log"
 LOGGER_NAME = "mortal_end"
-GAME_VERSION = "0.1.0-stage1"
+GAME_VERSION = VERSION
 
 
 class WindowsSafeRotatingFileHandler(RotatingFileHandler):

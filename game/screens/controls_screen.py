@@ -1,12 +1,13 @@
 from pathlib import Path
 import pygame
 from ..controls import ControlsManager,RebindingSession,ControlAction,ControlBinding
-from ..settings import SAVE_DIR,COLORS
+from ..settings import COLORS
+from ..user_data_manager import get_user_data_manager
 from .base_screen import BaseScreen
 from .ui_helpers import draw_background,draw_text
 class ControlsScreen(BaseScreen):
     def __init__(self,context=None):
-        super().__init__(context);self.fonts=None;self.time=0;self.player="p1";self.actions=list(ControlAction);self.index=0;self.manager=ControlsManager(SAVE_DIR/"controls.json");self.manager.load();self.rebinding=None;self.message=""
+        super().__init__(context);self.fonts=None;self.time=0;self.player="p1";self.actions=list(ControlAction);self.index=0;self.manager=ControlsManager(get_user_data_manager().paths.controls);self.manager.load();self.rebinding=None;self.message=""
     def handle_event(self,event):
         if self.rebinding and self.rebinding.waiting_for:
             binding=None

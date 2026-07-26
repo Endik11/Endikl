@@ -10,6 +10,7 @@ from .settings import COLORS, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
 from pathlib import Path
 import json
 from .economy import Catalog, EconomyManager, Wallet
+from .platform_paths import data_path
 
 
 @dataclass(frozen=True)
@@ -113,8 +114,7 @@ _compatibility_shop_catalog = build_shop_catalog
 
 
 def build_shop_catalog() -> list[ShopItem]:
-    root = Path(__file__).resolve().parents[1]
-    catalog = Catalog.load(root / "data/shop_catalog.json")
+    catalog = Catalog.load(data_path("shop_catalog.json"))
     strings = json.loads((root / "data/localization_ru.json").read_text(encoding="utf-8"))["strings"]
     items = []
     legacy_categories = {"palettes":"color","emblems":"misc","trails":"hit_effect","profile_frames":"theme","arena_variants":"arena","gallery_entries":"misc"}
@@ -248,7 +248,7 @@ class ShopScreen:
             save_manager.equip_item(item.category, item.id)
             self.message = "Equipped"
             return
-        catalog = Catalog.load(Path(__file__).resolve().parents[1] / "data/shop_catalog.json")
+        catalog = Catalog.load(data_path("shop_catalog.json"))
         transactions = set(getattr(profile, "economy_transactions", []))
         unlocks = set(profile.unlocked_fighters) | set(profile.unlocked_arenas) | set(getattr(profile, "received_reward_ids", []))
         economy = EconomyManager(Wallet(profile.currency), catalog, profile.purchased_items, transactions, unlocks=unlocks)
