@@ -29,7 +29,7 @@ class MainMenuScreen(BaseScreen):
         self.time = 0.0
 
     def _item_rect(self, index: int) -> pygame.Rect:
-        return pygame.Rect(84, 262 + index * 46 - 8, 320, 40)
+        return pygame.Rect(84, 218 + index * 40 - 6, 366, 36)
 
     def update(self, dt_or_pressed, events=None):
         if isinstance(dt_or_pressed, dict):
@@ -98,14 +98,14 @@ class MainMenuScreen(BaseScreen):
         fonts = fonts or self.fonts
         if fonts is None:
             return
-        draw_background(surface, self.time if t is None else t)
-        draw_text(surface, fonts["title"], "Mortal End", (94, 88), COLORS["white"])
+        draw_background(surface, self.time if t is None else t, key_art=True)
+        draw_text(surface, fonts["title"], GAME_TITLE, (94, 88), COLORS["white"])
         draw_text(surface, fonts["subtitle"], "Наследие", (104, 166), COLORS["gold"])
         for index, item in enumerate(self.items):
-            y = 262 + index * 46
+            y = 218 + index * 40
             selected = index == self.selected
             if selected:
-                pygame.draw.rect(surface, COLORS["panel_light"], (84, y - 8, 320, 40), border_radius=6)
+                pygame.draw.rect(surface, COLORS["panel_light"], (84, y - 6, 366, 36), border_radius=6)
             draw_text(surface, fonts["menu"], item.label, (108, y), COLORS["gold"] if selected else COLORS["white"])
         draw_text(surface, fonts["menu"], GAME_TITLE, (674, 148), COLORS["gold"])
 

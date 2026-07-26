@@ -9,6 +9,10 @@ from ..arena_catalog import ArenaDefinition
 from ..settings import COLORS, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
 
 
+_KEY_ART: pygame.Surface | None = None
+_KEY_ART_SCALED: pygame.Surface | None = None
+
+
 @dataclass(frozen=True)
 class MenuItem:
     label: str
@@ -43,7 +47,27 @@ def draw_text(
     return rect
 
 
-def draw_background(surface: pygame.Surface, t: float) -> None:
+def draw_background(surface: pygame.Surface, t: float, *, key_art: bool = False) -> None:
+    global _KEY_ART, _KEY_ART_SCALED
+    if key_art:
+        if _KEY_ART is None:
+            try:
+                from ..platform_paths import asset_path
+
+                _KEY_ART = pygame.image.load(asset_path("ui", "shadow_realm_keyart.png"))
+            except (OSError, pygame.error):
+                _KEY_ART = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+                _KEY_ART.fill((5, 7, 12))
+        if _KEY_ART_SCALED is None or _KEY_ART_SCALED.get_size() != (VIRTUAL_WIDTH, VIRTUAL_HEIGHT):
+            _KEY_ART_SCALED = pygame.transform.smoothscale(_KEY_ART, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+        surface.blit(_KEY_ART_SCALED, (0, 0))
+        shade = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.SRCALPHA)
+        shade.fill((4, 7, 13, 112))
+        surface.blit(shade, (0, 0))
+        pygame.draw.rect(surface, (8, 11, 18, 208), (54, 48, 470, 624), border_radius=18)
+        pygame.draw.line(surface, COLORS["cyan"], (54, 48), (54, 672), 3)
+        pygame.draw.line(surface, COLORS["red"], (54, 672), (524, 672), 3)
+        return
     surface.fill((5, 7, 12))
     for y in range(0, VIRTUAL_HEIGHT, 4):
         blend = y / VIRTUAL_HEIGHT

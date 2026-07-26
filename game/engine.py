@@ -242,6 +242,12 @@ class GameEngine:
                         elif self.content.reload():
                             self.state_manager.current_screen.enter({"content_reloaded": True})
                     elif event.type != pygame.QUIT:
+                        # Keep menu navigation discoverable with standard keyboard keys.
+                        if self.state is not GameState.FIGHT and event.type == pygame.KEYDOWN:
+                            if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                                self.input.pressed["p1"]["light_punch"] = True
+                            elif event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE) and self.state is not GameState.MAIN_MENU:
+                                self.input.pressed["p1"]["block"] = True
                         self.state_manager.current_screen.handle_event(event)
                 if self.running:
                     self.state_manager.current_screen.update(dt)

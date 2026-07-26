@@ -10,5 +10,6 @@ Audit date: 2026-07-26. Release policy: only `VERIFIED` resources may be bundled
 | `assets/fighters/mira_sheet.png` | PNG | Unknown | Unknown | Blocked | No | Unverified | Procedural fighter | UNKNOWN / EXCLUDED |
 | `assets/fighters/orrin_sheet.png` | PNG | Unknown | Unknown | Blocked | No | Unverified | Procedural fighter | UNKNOWN / EXCLUDED |
 | `assets/fighters/sable_sheet.png` | PNG | Unknown | Unknown | Blocked | No | Unverified | Procedural fighter | UNKNOWN / EXCLUDED |
+| `assets/ui/shadow_realm_keyart.png` | PNG | Project-generated concept art | Project-generated, no third-party media | Yes | Yes | Yes | Procedural menu fallback | VERIFIED |
 
-No file above may be described as free, original, or redistributable without provenance supplied by the owner. They remain in the development checkout only and are enumerated in `release_excludes.json`.
+The six files marked UNKNOWN remain development-only and are enumerated in `release_excludes.json`. The key art is a project-generated visual asset used by the Pygame menu and bundled release.

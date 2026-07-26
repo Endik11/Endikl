@@ -73,11 +73,17 @@ class CharacterSelectScreen(BaseScreen):
             if position is None:
                 continue
             if pygame.Rect(92, 220, 440, 330).collidepoint(position):
-                self.p1_index = (self.p1_index + 1) % len(self.keys)
-                self.p1_confirmed = False
+                if position[1] >= 490:
+                    self.p1_confirmed = True
+                else:
+                    self.p1_index = (self.p1_index + 1) % len(self.keys)
+                    self.p1_confirmed = False
             elif pygame.Rect(748, 220, 440, 330).collidepoint(position):
-                self.p2_index = (self.p2_index + 1) % len(self.keys)
-                self.p2_confirmed = False
+                if position[1] >= 490:
+                    self.p2_confirmed = True
+                else:
+                    self.p2_index = (self.p2_index + 1) % len(self.keys)
+                    self.p2_confirmed = False
 
         if p1.get("left"):
             self.p1_index = (self.p1_index - 1) % len(self.keys)
@@ -164,6 +170,9 @@ class CharacterSelectScreen(BaseScreen):
         draw_text(surface, fonts["small"], label, (rect.x + 28, rect.y + 24), COLORS["muted"])
         draw_text(surface, fonts["menu"], definition.name, (rect.x + 28, rect.y + 66), COLORS["white"])
         draw_text(surface, fonts["body"], definition.title, (rect.x + 30, rect.y + 110), definition.palette[1])
+        action_color = COLORS["green"] if confirmed else COLORS["panel_light"]
+        pygame.draw.rect(surface, action_color, (rect.x + 28, rect.bottom - 64, rect.width - 56, 36), border_radius=6)
+        draw_text(surface, fonts["small"], "READY" if confirmed else "CLICK TO READY", (rect.centerx, rect.bottom - 56), COLORS["ink"], center=True)
 
     def _registry(self):
         return getattr(self.context, "content", None) or get_default_registry()
