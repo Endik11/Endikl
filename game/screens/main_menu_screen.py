@@ -20,6 +20,7 @@ class MainMenuScreen(BaseScreen):
             MenuItem("Магазин", "shop"),
             MenuItem("Коллекция", "collection"),
             MenuItem("Статистика", "stats"),
+            MenuItem("Профиль", "profile"),
             MenuItem("Настройки", "settings"),
             MenuItem("Выход", "quit"),
         ]
@@ -73,6 +74,7 @@ class MainMenuScreen(BaseScreen):
             "shop": GameState.SHOP,
             "collection": GameState.COLLECTION,
             "stats": GameState.STATS,
+            "profile": GameState.PROFILE,
             "arena": GameState.ARENA_SELECT,
         }
         if action == "quit":

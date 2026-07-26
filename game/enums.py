@@ -18,6 +18,7 @@ class GameState(Enum):
     COLLECTION = auto()
     SHOP = auto()
     STATS = auto()
+    PROFILE = auto()
     ARCADE_LADDER = auto()
     ARCADE_SELECT = auto()
     STORY_SELECT = auto()
@@ -94,6 +95,7 @@ _GAME_STATE_ALIASES = {
     "collection": GameState.COLLECTION,
     "shop": GameState.SHOP,
     "stats": GameState.STATS,
+    "profile": GameState.PROFILE,
     "exit": GameState.EXIT,
 }
 

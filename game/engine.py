@@ -22,6 +22,8 @@ from .screens.result_screen import ResultScreen
 from .screens.settings_screen import SettingsScreen
 from .screens.shop_screen import ShopScreen
 from .screens.stats_screen import StatsScreen
+from .screens.profile_screen import ProfileScreen
+from .screens.credits_screen import CreditsScreen
 from .screens.mode_select_screen import ModeSelectScreen
 from .screens.arcade_ladder_screen import ArcadeLadderScreen
 from .screens.story_select_screen import StorySelectScreen
@@ -34,6 +36,8 @@ from .statistics_manager import StatisticsManager
 from .reward_manager import RewardManager
 from .match_statistics import MatchStatistics
 from .progress_manager import ProgressManager
+from .achievements import AchievementRegistry, AchievementManager
+from pathlib import Path
 from .modes.arcade_session import ArcadeSession
 from .modes.story_session import StorySession
 from .modes.tournament_session import TournamentSession
@@ -61,6 +65,8 @@ class GameEngine:
         self.statistics = StatisticsManager(self.profile.statistics, self.profile.processed_result_ids)
         self.rewards = RewardManager(self.profile.received_reward_ids, self.profile.processed_result_ids)
         self.progress = ProgressManager(self.profile)
+        self.achievement_registry = AchievementRegistry.load(Path(__file__).parents[1] / "data/achievements.json")
+        self.achievements = AchievementManager(self.achievement_registry, getattr(self.profile, "achievement_progress", {}), getattr(self.profile, "unlocked_achievements", []), getattr(self.profile, "processed_achievement_events", []))
         self._repair_profile_content_ids()
         self.display = DisplayManager(self.settings)
         self.screen = self.display.create_display()
@@ -116,6 +122,11 @@ class GameEngine:
             stats = MatchStatistics.from_events(result_id, self.session.player_one_fighter or "", self.session.player_two_fighter or "", self.session.selected_arena or "", outcome, result.get("events", ()))
             self.statistics.process(stats)
             self._advance_mode_result(result_id, outcome == "win")
+            self.achievements.evaluate(result_id, self.statistics.data, lambda reward_id, points: self.rewards.grant(reward_id, f"{result_id}:{reward_id}", self.profile, "currency", points))
+            achievement_data = self.achievements.to_dict()
+            self.profile.achievement_progress = achievement_data["progress"]
+            self.profile.unlocked_achievements = achievement_data["unlocked"]
+            self.profile.processed_achievement_events = achievement_data["processed_events"]
             self.profile.statistics = dict(self.statistics.data)
             self.profile.processed_result_ids = sorted(self.statistics.processed_result_ids | self.rewards.processed_result_ids)
             self.profile.received_reward_ids = sorted(self.rewards.received_reward_ids)
@@ -177,6 +188,8 @@ class GameEngine:
             GameState.TRAINING_SETUP: TrainingSettingsScreen(self.screen_context),
             GameState.TRAINING: FightScreen(self.screen_context),
             GameState.MODE_RESULT: ResultScreen(self.screen_context),
+            GameState.PROFILE: ProfileScreen(context=self.screen_context),
+            GameState.CREDITS: CreditsScreen(context=self.screen_context),
             GameState.SETTINGS: SettingsScreen(context=self.screen_context),
             GameState.CHARACTER_SELECT: CharacterSelectScreen(context=self.screen_context),
             GameState.ARENA_SELECT: ArenaSelectScreen(self.profile.selected_arena, context=self.screen_context),
